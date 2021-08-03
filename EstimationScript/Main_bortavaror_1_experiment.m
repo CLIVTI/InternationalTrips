@@ -44,6 +44,7 @@ TrainNtransferPath='LOS/Train/NTransfer.xlsx';
 % Flight
 AirTimePath='LOS/Air/Time.xlsx';
 AirCostPath='LOS/Air/TicketPrice.xlsx';
+AirFlightTimePath='LOS/Air/InVehicleTime.xlsx';
 AirTransferPath='LOS/Air/NumberofFlights.xlsx';
 
 % Ferry
@@ -157,25 +158,40 @@ zonal_varNames.(mode_choice_names{5})=zonal_data_ferry;
 %% read the level-of-service variables
 % car time and cost
 carTime = xlsread(CarTimeFilePath) ;
-carCost = xlsread(CarDistancePath) ;
-carCost(2:end,2:end)=carCost(2:end,2:end).*0.18;
+carDistance = xlsread(CarDistancePath) ;
+carCost=carDistance;
+carCost(2:end,2:end)=carDistance(2:end,2:end).*0.18;
+for i=1:(size(carDistance,1)-1)
+    noCarUsedIndex=carDistance(i+1,:)<100;
+    carTime(i+1,noCarUsedIndex)=nan;
+    carCost(i+1,noCarUsedIndex)=nan;
+end
 
 % bus time and cost
 busTime = xlsread(BusTimeFilePath) ;
-busCost = xlsread(BusDistancePath) ;
-busCost(2:end,2:end)=busCost(2:end,2:end).*0.08;
+busDistance = xlsread(BusDistancePath) ;
+busCost=busDistance;
+busCost(2:end,2:end)=busDistance(2:end,2:end).*0.08;
+for i=1:(size(busDistance,1)-1)
+    noBusUsedIndex=busDistance(i+1,:)<100;
+    busTime(i+1,noBusUsedIndex)=nan;
+    busCost(i+1,noBusUsedIndex)=nan;
+end
 
 % train impedance and cost
 trainImpedance = xlsread(TrainImpedanceFilePath) ;
-trainCost = xlsread(TrainDistancePath) ;
+trainDistance = xlsread(TrainDistancePath) ;
+trainCost=trainDistance;
 trainNTransfer=xlsread(TrainNtransferPath) ;
-trainCost(2:end,2:end)=trainCost(2:end,2:end).*0.17553+(trainNTransfer(2:end,2:end)+1).*21.09441;
-for i=1:(size(trainCost,1)-1)
-    noTrainUsedIndex=trainCost(i+1,:)==0;
+trainCost(2:end,2:end)=trainDistance(2:end,2:end).*0.17553+(trainNTransfer(2:end,2:end)+1).*21.09441;
+for i=1:(size(trainDistance,1)-1)
+    noTrainUsedIndex=trainCost(i+1,:)==0 | trainDistance(i+1,:)<100;
     trainImpedance(i+1,noTrainUsedIndex)=nan;
 end
 % flight time and cost
 airTime = xlsread(AirTimePath) ;
+airInVehicleTime = xlsread(AirFlightTimePath) ;
+airInVehicleTime(2:end,2:end)=airInVehicleTime(2:end,2:end)/60*850;
 airCost = xlsread(AirCostPath);
 airTransfer = xlsread(AirTransferPath);
 for i=1:(size(airCost,1)-1)

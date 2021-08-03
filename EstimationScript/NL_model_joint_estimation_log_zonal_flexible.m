@@ -235,9 +235,9 @@ for i=1:length(losData_choiceName)
             if (sum(ismember(originZoneID,originZonePrediction(k)))==1)
                 transformedMatrix(k+1,:)=losMatrixToRead(ismember(originZoneID,originZonePrediction(k)),:);
             else
-                warning('there is still missing value in los data %10.0f',originZonePrediction(k))
-                output=[];
-                return
+%                 warning('there is still missing value in los data %10.0f',originZonePrediction(k))
+%                 output=[];
+%                 return
             end
         end
         

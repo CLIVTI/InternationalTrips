@@ -162,25 +162,67 @@ zonal_varNames.(mode_choice_names{5})=zonal_data_ferry;
 
 
 %% read the level-of-service variables
+DestinationZoneIDs=ZoneData.TransCadID;
+SemesterZone=ZoneData.SemesterZone;
 % car time and cost
 carTime = xlsread(CarTimeFilePath);
 carTimeLog=carTime;
 carTimeLog(2:end,2:end)=log(carTimeLog(2:end,2:end));
 
-carCost = xlsread(CarDistancePath) ;
-carCost(2:end,2:end)=carCost(2:end,2:end).*0.18;
+carDistance = xlsread(CarDistancePath) ;
+carCost=carDistance;
+carCost(2:end,2:end)=carDistance(2:end,2:end).*0.18;
 carCostLog=carCost;
 carCostLog(2:end,2:end)=log(carCost(2:end,2:end)+0.01);
+
+
+% create destinatoion zone dymmy
+carDestinationZoneIDs=carTime(1,2:end);
+SemesterZonesDummy=zeros(1,length(carDestinationZoneIDs));
+for i=1:length(carDestinationZoneIDs)
+    SemesterZonesDummy(i)=SemesterZone(DestinationZoneIDs==carDestinationZoneIDs(i));
+end
+SemesterZonesMatrixCar=carTime;
+SemesterZonesMatrixCar(2:end,2:end)=SemesterZonesDummy(ones(size(carTime,1)-1,1),:);
+
+for i=1:(size(carDistance,1)-1)
+    noUsedIndex=carDistance(i+1,:)<100 | carTime(i+1,:)>480;
+    SemesterZonesMatrixCar(i+1,noUsedIndex)=nan;
+    carTime(i+1,noUsedIndex)=nan;
+    carTimeLog(i+1,noUsedIndex)=nan;
+    carCost(i+1,noUsedIndex)=nan;
+    carCostLog(i+1,noUsedIndex)=nan;
+end
 
 % bus time and cost
 busTime = xlsread(BusTimeFilePath) ;
 busTimeLog=busTime;
 busTimeLog(2:end,2:end)=log(busTime(2:end,2:end));
 
-busCost = xlsread(BusDistancePath) ;
-busCost(2:end,2:end)=busCost(2:end,2:end).*0.08;
+busDistance = xlsread(BusDistancePath) ;
+busCost=busDistance;
+busCost(2:end,2:end)=busDistance(2:end,2:end).*0.08;
 busCostLog=busCost;
 busCostLog(2:end,2:end)=log(busCost(2:end,2:end)+0.01);
+
+
+% create destinatoion zone dymmy
+busDestinationZoneIDs=busTime(1,2:end);
+SemesterZonesDummy=zeros(1,length(busDestinationZoneIDs));
+for i=1:length(busDestinationZoneIDs)
+    SemesterZonesDummy(i)=SemesterZone(DestinationZoneIDs==busDestinationZoneIDs(i));
+end
+SemesterZonesMatrixBus=busTime;
+SemesterZonesMatrixBus(2:end,2:end)=SemesterZonesDummy(ones(size(busTime,1)-1,1),:);
+
+for i=1:(size(busDistance,1)-1)
+    noUsedIndex=busDistance(i+1,:)<100 | busTime(i+1,:)>480;
+    SemesterZonesMatrixBus(i+1,noUsedIndex)=nan;
+    busTime(i+1,noUsedIndex)=nan;
+    busTimeLog(i+1,noUsedIndex)=nan;
+    busCost(i+1,noUsedIndex)=nan;
+    busCostLog(i+1,noUsedIndex)=nan;
+end
 
 % train impedance and cost
 % TrainInVehicleTimePath='LOS/Train/InVehicleTime.xlsx';
@@ -197,17 +239,31 @@ TrainAccessTime=xlsread(TrainAccessTimePath) ;
 TrainEgressTime=xlsread(TrainEgressTimePath) ;
 TrainAccessEgressTime=TrainAccessTime;
 TrainAccessEgressTime(2:end,2:end)=TrainAccessTime(2:end,2:end)+TrainEgressTime(2:end,2:end);
-
-trainCost = xlsread(TrainDistancePath) ;
+TrainTotalTime=TrainInVehicleTime;
+TrainTotalTime(2:end,2:end)=TrainInVehicleTime(2:end,2:end)+TrainFirstWaitTime(2:end,2:end)+TrainAccessEgressTime(2:end,2:end);
+trainDistance = xlsread(TrainDistancePath) ;
+trainCost=trainDistance;
 trainNTransfer=xlsread(TrainNtransferPath) ;
-trainCost(2:end,2:end)=trainCost(2:end,2:end).*0.17553+(trainNTransfer(2:end,2:end)+1).*21.09441;
-for i=1:(size(trainCost,1)-1)
-    noTrainUsedIndex=trainCost(i+1,:)==0;
-    trainImpedance(i+1,noTrainUsedIndex)=nan;
-    TrainInVehicleTime(i+1,noTrainUsedIndex)=nan;
-    TrainFirstWaitTime(i+1,noTrainUsedIndex)=nan;
-    TrainAccessEgressTime(i+1,noTrainUsedIndex)=nan;
-    trainNTransfer(i+1,noTrainUsedIndex)=nan;
+trainCost(2:end,2:end)=trainDistance(2:end,2:end).*0.17553+(trainNTransfer(2:end,2:end)+1).*21.09441;
+
+% create destinatoion zone dymmy
+trainDestinationZoneIDs=TrainInVehicleTime(1,2:end);
+SemesterZonesDummy=zeros(1,length(trainDestinationZoneIDs));
+for i=1:length(trainDestinationZoneIDs)
+    SemesterZonesDummy(i)=SemesterZone(DestinationZoneIDs==trainDestinationZoneIDs(i));
+end
+SemesterZonesMatrixTrain=TrainInVehicleTime;
+SemesterZonesMatrixTrain(2:end,2:end)=SemesterZonesDummy(ones(size(TrainInVehicleTime,1)-1,1),:);
+
+
+for i=1:(size(trainDistance,1)-1)
+    noUsedIndex=trainCost(i+1,:)==0 | trainDistance(i+1,:)<100 | TrainTotalTime(i+1,:)>480;
+    SemesterZonesMatrixTrain(i+1,noUsedIndex)=nan;
+    trainImpedance(i+1,noUsedIndex)=nan;
+    TrainInVehicleTime(i+1,noUsedIndex)=nan;
+    TrainFirstWaitTime(i+1,noUsedIndex)=nan;
+    TrainAccessEgressTime(i+1,noUsedIndex)=nan;
+    trainNTransfer(i+1,noUsedIndex)=nan;
 end
 
 TrainInVehicleTimeLog=TrainInVehicleTime;
@@ -223,15 +279,29 @@ trainCostLog(2:end,2:end)=log(trainCost(2:end,2:end)+0.01);
 % AirTransferPath='LOS/Air/NumberofFlights.xlsx';
 AirInVehicleTime = xlsread(AirInVehicleTimePath) ;
 AirAccessEgressTime= xlsread(AirAccessEgressTimePath) ;
-
+AirTotalTime=AirInVehicleTime;
+AirTotalTime(2:end,2:end)=AirInVehicleTime(2:end,2:end)+AirAccessEgressTime(2:end,2:end);
 airCost = xlsread(AirCostPath);
 airNTransfer = xlsread(AirTransferPath);
+
+% create destinatoion zone dymmy
+airDestinationZoneIDs=AirInVehicleTime(1,2:end);
+SemesterZonesDummy=zeros(1,length(airDestinationZoneIDs));
+for i=1:length(airDestinationZoneIDs)
+    SemesterZonesDummy(i)=SemesterZone(DestinationZoneIDs==airDestinationZoneIDs(i));
+end
+SemesterZonesMatrixAir=AirInVehicleTime;
+SemesterZonesMatrixAir(2:end,2:end)=SemesterZonesDummy(ones(size(AirInVehicleTime,1)-1,1),:);
+
+
+
 for i=1:(size(airCost,1)-1)
-    noAirUsedIndex=airNTransfer(i+1,:)==0;
-    AirInVehicleTime(i+1,noAirUsedIndex)=nan;
-    airCost(i+1,noAirUsedIndex)=nan;
-    AirAccessEgressTime(i+1,noAirUsedIndex)=nan;
-    airNTransfer(i+1,noAirUsedIndex)=nan;
+    noUsedIndex=airNTransfer(i+1,:)==0 | AirInVehicleTime(i+1,:)<100/850*60 | AirTotalTime(i+1,:)>480;
+    SemesterZonesMatrixAir(i+1,noUsedIndex)=nan;
+    AirInVehicleTime(i+1,noUsedIndex)=nan;
+    airCost(i+1,noUsedIndex)=nan;
+    AirAccessEgressTime(i+1,noUsedIndex)=nan;
+    airNTransfer(i+1,noUsedIndex)=nan;
 end
 airNTransfer(2:end,2:end)=airNTransfer(2:end,2:end)-1;
 AirInVehicleTimeLog=AirInVehicleTime;
@@ -254,13 +324,27 @@ FerryInVehicleTime = xlsread(FerryInVehicleTimeFilePath) ;
 FerryFirstWaitTime=xlsread(FerryHeadwayPath) ;
 FerryFirstWaitTime(2:end,2:end)=FerryFirstWaitTime(2:end,2:end)./2;
 FerryAccessEgressTime=xlsread(FerryAccessEgressTimePath) ;
+FerryTotalTime=FerryInVehicleTime;
+FerryTotalTime(2:end,2:end)=FerryInVehicleTime(2:end,2:end)+FerryAccessEgressTime(2:end,2:end);
 ferryCost = xlsread(FerryCostPath);  %% calculated as for car link, cost=0.18 euro/km, for ferry link, use the ferry line cost: car_HS_H
 % FerryDistance = xlsread(FerryDistancePath);
-% FerryDistanceFullTrip= xlsread(DistancePath);
+FerryDistanceFullTrip= xlsread(DistancePath);
 ferryNTransfer=xlsread(FerryNumberLineUsedPath);
+
+
+% create destinatoion zone dymmy
+ferryDestinationZoneIDs=FerryInVehicleTime(1,2:end);
+SemesterZonesDummy=zeros(1,length(ferryDestinationZoneIDs));
+for i=1:length(ferryDestinationZoneIDs)
+    SemesterZonesDummy(i)=SemesterZone(DestinationZoneIDs==ferryDestinationZoneIDs(i));
+end
+SemesterZonesMatrixFerry=FerryInVehicleTime;
+SemesterZonesMatrixFerry(2:end,2:end)=SemesterZonesDummy(ones(size(FerryInVehicleTime,1)-1,1),:);
+
 % we assume that if there is no ferry line used, the destination is not available, code as nan.
 for i=1:(size(ferryNTransfer,1)-1)
-    noFerryUsedIndex=ferryNTransfer(i+1,:)==0;
+    noFerryUsedIndex=ferryNTransfer(i+1,:)==0 | FerryDistanceFullTrip(i+1,:)<100 | FerryTotalTime(i+1,:)>480;
+    SemesterZonesMatrixFerry(i+1,noFerryUsedIndex)=nan;
     FerryInVehicleTime(i+1,noFerryUsedIndex)=nan;
     ferryCost(i+1,noFerryUsedIndex)=nan;
     FerryFirstWaitTime(i+1,noFerryUsedIndex)=nan;
@@ -277,6 +361,7 @@ ferryCostLog(2:end,2:end)=log(ferryCost(2:end,2:end)+0.01);
 
 % car
 level_of_service_var_car=[];
+level_of_service_var_car.SemesterZone=SemesterZonesMatrixCar;
 level_of_service_var_car.carTravelTime=carTime;
 level_of_service_var_car.carLogTravelTime=carTimeLog;
 level_of_service_var_car.travelCost_lowMediumIncome=carCost;
@@ -286,6 +371,7 @@ level_of_service_var_car.travelCostLog_lowMediumIncome=carCostLog;
 level_of_service_var_car.travelCostLog_highIncome=carCostLog;
 % bus
 level_of_service_var_bus=[];
+level_of_service_var_bus.SemesterZone=SemesterZonesMatrixBus;
 level_of_service_var_bus.inVehicleTimeBusTrainAirFerry=busTime;
 level_of_service_var_bus.logInVehicleTimeBusTrainAirFerry=busTimeLog;
 level_of_service_var_bus.travelCost_lowMediumIncome=busCost;
@@ -296,8 +382,9 @@ level_of_service_var_bus.travelCostLog_highIncome=busCostLog;
 
 % train
 level_of_service_var_train=[];
+level_of_service_var_train.SemesterZone=SemesterZonesMatrixTrain;
 level_of_service_var_train.accessEgressTimeTrainAirFerry=TrainAccessEgressTime;
-level_of_service_var_train.firstWaitTimeTrainFerry=TrainFirstWaitTime;
+level_of_service_var_train.firstWaitTimeTrain=TrainFirstWaitTime;
 level_of_service_var_train.numberTransferTrainAirFerry=trainNTransfer;
 level_of_service_var_train.inVehicleTimeBusTrainAirFerry=TrainInVehicleTime;
 level_of_service_var_train.logInVehicleTimeBusTrainAirFerry=TrainInVehicleTimeLog;
@@ -330,7 +417,7 @@ level_of_service_var_air=[];
 % end
 % airTime_threshold1(:,1)=AirInVehicleTime(:,1);
 % airTime_threshold2(:,1)=AirInVehicleTime(:,1);
-
+level_of_service_var_air.SemesterZone=SemesterZonesMatrixAir;
 level_of_service_var_air.accessEgressTimeTrainAirFerry=AirAccessEgressTime;
 level_of_service_var_air.numberTransferTrainAirFerry=airNTransfer;
 level_of_service_var_air.inVehicleTimeBusTrainAirFerry=AirInVehicleTime;
@@ -345,8 +432,9 @@ level_of_service_var_air.travelCostLog_highIncome=airCostLog;
 
 % ferry
 level_of_service_var_ferry=[];
+level_of_service_var_ferry.SemesterZone=SemesterZonesMatrixFerry;
 level_of_service_var_ferry.accessEgressTimeTrainAirFerry=FerryAccessEgressTime;
-level_of_service_var_ferry.firstWaitTimeTrainFerry=FerryFirstWaitTime;
+% level_of_service_var_ferry.firstWaitTimeTrainFerry=FerryFirstWaitTime;
 level_of_service_var_ferry.numberTransferTrainAirFerry=ferryNTransfer;
 level_of_service_var_ferry.inVehicleTimeBusTrainAirFerry=FerryInVehicleTime;
 level_of_service_var_ferry.logInVehicleTimeBusTrainAirFerry=FerryInVehicleTimeLog;
@@ -367,20 +455,20 @@ level_of_service_var.(mode_choice_names{5})=level_of_service_var_ferry;
 %% specify mode choice part
 
 % all variable names {'female','VILLA','age_64','age_18_30','age_17','BILANT'}
-beta_names_fix.(mode_choice_names{1})={'NcarInHH'};   % walk
-X_names_fix.(mode_choice_names{1})={'BILANT'};  % walk
+beta_names_fix.(mode_choice_names{1})={'NcarInHH','bil_female','bil_VILLA'};   % walk
+X_names_fix.(mode_choice_names{1})={'BILANT','female','VILLA'};  % walk
 
-beta_names_fix.(mode_choice_names{2})={'bus_ASC','bus_female','bus_VILLA','bus_age_17','bus_age_64'};  
-X_names_fix.(mode_choice_names{2})={'ASC','female','VILLA','age_17','age_64'};  
+beta_names_fix.(mode_choice_names{2})={'bus_ASC','bus_age_17','bus_age_64'};  
+X_names_fix.(mode_choice_names{2})={'ASC','age_17','age_64'};  
 
-beta_names_fix.(mode_choice_names{3})={'train_ASC','train_female','train_VILLA','train_age_17','train_age_64'};   
-X_names_fix.(mode_choice_names{3})={'ASC','female','VILLA','age_17','age_64'};  
+beta_names_fix.(mode_choice_names{3})={'train_ASC','train_age_64'};   
+X_names_fix.(mode_choice_names{3})={'ASC','age_64'};  
 
-beta_names_fix.(mode_choice_names{4})={'air_ASC','air_female','air_VILLA','air_age_17','air_age_64'};  
-X_names_fix.(mode_choice_names{4})={'ASC','female','VILLA','age_17','age_64'};  
+beta_names_fix.(mode_choice_names{4})={'air_ASC','air_age_17','air_age_64'};  
+X_names_fix.(mode_choice_names{4})={'ASC','age_17','age_64'};  
 
-beta_names_fix.(mode_choice_names{5})={'ferry_ASC','_ferry_female','ferry_VILLA','ferry_age_17','ferry_age_64'};  
-X_names_fix.(mode_choice_names{5})={'ASC','female','VILLA','age_17','age_64'};  
+beta_names_fix.(mode_choice_names{5})={'ferry_ASC','ferry_age_17','ferry_age_64'};  
+X_names_fix.(mode_choice_names{5})={'ASC','age_17','age_64'};  
 
 
 model_specification_modeChoice=[];
