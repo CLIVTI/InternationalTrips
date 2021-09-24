@@ -94,11 +94,11 @@ for i=1:length(firstLevel_choiceName)
     fprintf('\n %-15s : %8s : %8s \n' , strcat('Destination_',firstLevel_choiceName{i}),['Estimate'],['t-value']);
     for j=1:length(beta_F_i)
         if j==F_0_index
-            fprintf('%-15s : %+8.4f : %+8.4f \n', strcat('log-size parameter_',beta_names_F_i{j}) , beta_F_i(j) , tvalues_F_i(j))
+            fprintf('%-15s : %+8.6f : %+8.4f \n', strcat('log-size parameter_',beta_names_F_i{j}) , beta_F_i(j) , tvalues_F_i(j))
         elseif zonal_or_los_D_i(j)==1
-            fprintf('%-15s : %+8.4f : %+8.4f \n', strcat('exp_',beta_names_F_i{j}) , exp(beta_F_i(j)) , 1./(beta_F_i(j)./tvalues_F_i(j)))
+            fprintf('%-15s : %+8.6f : %+8.4f \n', strcat('exp_',beta_names_F_i{j}) , exp(beta_F_i(j)) , 1./(beta_F_i(j)./tvalues_F_i(j)))
         elseif zonal_or_los_D_i(j)==3
-            fprintf('%-15s : %+8.4f : %+8.4f \n', beta_names_F_i{j} , beta_F_i(j) , tvalues_F_i(j))
+            fprintf('%-15s : %+8.6f : %+8.4f \n', beta_names_F_i{j} , beta_F_i(j) , tvalues_F_i(j))
         end
     end
     organized_beta.(firstLevel_choiceName{i})=beta_F_i;

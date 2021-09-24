@@ -1,59 +1,59 @@
 
 %-------------------------------------------------------
 function output=NL_model_joint_estimation_log_zonal_flexible(Dataset,...
-                                                             DatasetPrediction,...
-                                                             model_specification_modeChoice,...
-                                                             ZoneData,...
-                                                             ZoneID_varname,...
-                                                             zonal_varNames,...
-                                                             level_of_service_var,...
-                                                             obs_varName,...
-                                                             origin_varName,...
-                                                             destination_varName) % note that ASC has been included in both "specific_names_fix" and "variables"
+    DatasetPrediction,...
+    model_specification_modeChoice,...
+    ZoneData,...
+    ZoneID_varname,...
+    zonal_varNames,...
+    level_of_service_var,...
+    obs_varName,...
+    origin_varName,...
+    destination_varName) % note that ASC has been included in both "specific_names_fix" and "variables"
 % the simple benchmark MNL model
-% input: 
-%        Dataset: (NP*Nvar table) -- it must have first 2 variables as (departure and arrival zones) the data stores the departure and arrival Keys (samszone id) of each trip                                                                            
+% input:
+%        Dataset: (NP*Nvar table) -- it must have first 2 variables as (departure and arrival zones) the data stores the departure and arrival Keys (samszone id) of each trip
 %        model_specification_modeChoice: (structure) -- it contains four elements for each mode:
 %                                        1.model_specification_modeChoice.beta_names: (structure) contains the following elements:
 %                                                  model_specification_modeChoice.beta_names.(choice_name{x}) -- each element (.(choice_name{x}))represents a string vector of the names of beta in each 1st level choice
 %                                        2. model_specification_modeChoice.X_names_fix: (structure) contains the following elements:
 %                                                  model_specification_modeChoice.X_names_fix.choice_name{x}) -- each element (.(choice_name{x}))represents a string vector of the names of X variables in each 1st level choice
-%                                        3. model_specification_modeChoice.Y_names: (a string)     
-%                                                  model_specification_modeChoice.Y_names -- the variable name denoting the 1st level choice chosen by each obs  (in this case, its 'mode_choice')   
+%                                        3. model_specification_modeChoice.Y_names: (a string)
+%                                                  model_specification_modeChoice.Y_names -- the variable name denoting the 1st level choice chosen by each obs  (in this case, its 'mode_choice')
 %                                        4.model_specification_modeChoice.choice_name -- (a string vector)
-%                                                  model_specification_modeChoice.choice_name -- the string vector contains the name of each choice e.g. walk, bike, carDriver,... 
-%                                                  
+%                                                  model_specification_modeChoice.choice_name -- the string vector contains the name of each choice e.g. walk, bike, carDriver,...
+%
 %        ZoneData: (NdestinationZone*??? table) -- it contains the zonal lvl variables
 %        ZoneID_varnames: the variable name in ZoneData that denotes the zone ID.
 %        zonal_varNames: (structure) -- it contains two elements for each mode:
 %                                        1. zonal_data_car.betaNames:  string contains var names for the model, t.ex.{'LU_Population','LU_Employment','LU_GDP_CAP','LU_Hotel_beds'};
 %                                        2. zonal_data_car.XNames:  string contains var names in ZoneData, t.ex.{'Population','Employment','GDP_CAP','Hotel_beds'};
-%                              
-% 
+%
+%
 %        level_of_service_var: (structure) -- it contains the level of service variables that are specified for each choice in the 1st level choice part
-%                                   e.g. level_of_service_var.walk -- (structure), contains a structure  with each element a matrix of level of service variable (NZ,NZ+1) dimension                           
-%        constraint: a string cell representing which variables are the same            
+%                                   e.g. level_of_service_var.walk -- (structure), contains a structure  with each element a matrix of level of service variable (NZ,NZ+1) dimension
+%        constraint: a string cell representing which variables are the same
 %        obs_varName: (string) -- the variable name of individual/observation index
 %        origin_varName: (string) -- the variable name of the origin zone in the dataset
 %        destination_varName: (string) -- the variable name of the destination choice in the dataset
 %        flag: (integer) -- 1 if you only want the sequential estimation results, faster; 0 if you want the joint
-%        estimatin results. 
+%        estimatin results.
 
 % output:
 %         output has the following structure names
-% 
+%
 %         output.('fixed_beta'): a structure with each element as a vector of fixed beta for each choice alternative
 %         output.('fixed_beta_tvalue'): a structure with each element as a vector of tvalues of fixed beta for each choice alternative
 %         output.('fixed_beta_name'): a structure with each element as a vector of names of fixed beta for each choice alternative
 %         output.('fixed_variable_name'): a structure with each element as a vector of variable names of fixed beta for each choice alternative
-%         output.('model_fit'): a structure with element as model fit: 
+%         output.('model_fit'): a structure with element as model fit:
 %         following elements contained:
 %                                 model_fit_info.('Loglikelihood_final')
 %                                 model_fit_info.('Loglikelihood_zero')
 %                                 model_fit_info.('adjusted_McFadden_rho')
 %                                 model_fit_info.('Loglikelihood_intercept')
 global dataset_obsID
-global firstLevel_choiceName 
+global firstLevel_choiceName
 global DestinationCHOICE_All zonal_matrix_All los_matrix_All
 global zonal_data_varName_All level_of_service_var_varNames_All
 global N_destination_beta N_ModeChoice_beta
@@ -73,7 +73,7 @@ if size(DATA,2)~=length(title)
     return
 end
 if ~ismember(title,'ASC')
-   Dataset.ASC=ones(size(DATA,1),1);
+    Dataset.ASC=ones(size(DATA,1),1);
 end
 
 % check Dataset: 1. whether there is any missing value in the Dataset
@@ -85,8 +85,8 @@ zoneKeyInputCheck=ZoneData.(ZoneID_varname);
 unique_id=unique(DATA(:,ismember(dataset_varName,destination_varName)));
 for i=1:length(unique_id)
     if sum(zoneKeyInputCheck==unique_id(i))~=1
-       fprintf('\nthe following zone id is not included in "Key": %10.0f ', unique_id(i));
-       return
+        fprintf('\nthe following zone id is not included in "Key": %10.0f ', unique_id(i));
+        return
     end
 end
 
@@ -97,8 +97,8 @@ for i=1:length(zone_choiceName)
     xNames=zonal_varNames.(zone_choiceName{i}).XNames;
     for j=1:length(xNames)
         if (sum(ismember(zoneData_varName,xNames{j}))~=1)
-             fprintf('\n the following zone variable name is not included in Zone data: %10.0s ', xNames{j});
-             return
+            fprintf('\n the following zone variable name is not included in Zone data: %10.0s ', xNames{j});
+            return
         end
     end
 end
@@ -141,7 +141,7 @@ for i=1:NPInputCheck
         rowIndex=ismember(originIDs,origin);
         colIndex=ismember(destinationIDs,destination);
         losValue=searchMatrix(rowIndex,colIndex);
-        if isempty(losValue) 
+        if isempty(losValue)
             fprintf('\n the following destrination in the input data cannnot be found in the "Key":  mode: %10s ,destinationID: %10.0f', travelMode{1}, destination);
             obsShouldBeUsed(i)=0;
         elseif isnan(losValue)
@@ -171,7 +171,7 @@ for i=1:length(losData_choiceName)
             end
         end
     end
-
+    
     
 end
 % remove the invalid data
@@ -201,12 +201,12 @@ for i=1:length(losData_choiceName)
         originZoneID=losMatrix(2:end,1);
         destinationZoneIDs=losMatrix(1,2:end);
         losMatrixToRead=losMatrix(2:end,2:end);
-        transformedMatrix=nan(length(originZone)+1,size(losMatrix,2)-1); 
+        transformedMatrix=nan(length(originZone)+1,size(losMatrix,2)-1);
         transformedMatrix(1,:)=destinationZoneIDs;
         % for estimation data
         for k=1:length(originZone)
             if (sum(ismember(originZoneID,originZone(k)))==1)
-                transformedMatrix(k+1,:)=losMatrixToRead(ismember(originZoneID,originZone(k)),:);            
+                transformedMatrix(k+1,:)=losMatrixToRead(ismember(originZoneID,originZone(k)),:);
             else
                 warning('there is still missing value in los data %10.0f',originZone(k))
                 output=[];
@@ -215,34 +215,61 @@ for i=1:length(losData_choiceName)
         end
         
         if sum(ismember(level_of_service_var_ModeX_varNames{j},'_'))==0
-            level_of_service_var.(losData_choiceName{i}).(level_of_service_var_ModeX_varNames{j})=transformedMatrix;
-        else 
+            if strcmp(losData_choiceName{i},'car') && contains(level_of_service_var_ModeX_varNames{j},'travelCost')
+                warning('\n car cost is further divided by the party size factor for variable : %10.0s',level_of_service_var_ModeX_varNames{j})
+                dataVar=Dataset.('PartySizeFactor');
+                transformedMatrix(2:end,:)=transformedMatrix(2:end,:).*dataVar(:,ones(1,size(transformedMatrix,2)));
+                level_of_service_var.(losData_choiceName{i}).(level_of_service_var_ModeX_varNames{j})=transformedMatrix;
+            else
+                level_of_service_var.(losData_choiceName{i}).(level_of_service_var_ModeX_varNames{j})=transformedMatrix;
+            end
+            
+            
+        else
             dataVarName=strsplit(level_of_service_var_ModeX_varNames{j},'_');
             if sum(ismember(dataset_varName,dataVarName{2}))==0
-                warning('/n the following variable defined in los data does not exist in choice dataset: %10.0s',dataVarName{2})
+                warning('\n the following variable defined in los data does not exist in choice dataset: %10.0s',dataVarName{2})
                 output=[];
                 return
             end
-            dataVar=Dataset.(dataVarName{2});
-            transformedMatrix(2:end,:)=transformedMatrix(2:end,:).*dataVar(:,ones(1,size(transformedMatrix,2)));
-            level_of_service_var.(losData_choiceName{i}).(level_of_service_var_ModeX_varNames{j})=transformedMatrix;
+            if strcmp(losData_choiceName{i},'car') && contains(dataVarName{1},'travelCost')
+                warning('\n car cost is further divided by the party size factor for variable : %10.0s',level_of_service_var_ModeX_varNames{j})
+                dataVar=Dataset.(dataVarName{2}).*Dataset.('PartySizeFactor');
+                transformedMatrix(2:end,:)=transformedMatrix(2:end,:).*dataVar(:,ones(1,size(transformedMatrix,2)));
+                level_of_service_var.(losData_choiceName{i}).(level_of_service_var_ModeX_varNames{j})=transformedMatrix;
+            else
+                dataVar=Dataset.(dataVarName{2});
+                transformedMatrix(2:end,:)=transformedMatrix(2:end,:).*dataVar(:,ones(1,size(transformedMatrix,2)));
+                level_of_service_var.(losData_choiceName{i}).(level_of_service_var_ModeX_varNames{j})=transformedMatrix;
+            end
+            
         end
         
         % for logsum data -----------------------------------------------------------------------------------------
-        transformedMatrix=nan(length(originZonePrediction)+1,size(losMatrix,2)-1); 
+        transformedMatrix=nan(length(originZonePrediction)+1,size(losMatrix,2)-1);
         transformedMatrix(1,:)=destinationZoneIDs;
         for k=1:length(originZonePrediction)
             if (sum(ismember(originZoneID,originZonePrediction(k)))==1)
                 transformedMatrix(k+1,:)=losMatrixToRead(ismember(originZoneID,originZonePrediction(k)),:);
             else
-%                 warning('there is still missing value in los data %10.0f',originZonePrediction(k))
-%                 output=[];
-%                 return
+                %                 warning('there is still missing value in los data %10.0f',originZonePrediction(k))
+                %                 output=[];
+                %                 return
             end
         end
         
         if sum(ismember(level_of_service_var_ModeX_varNames{j},'_'))==0
-            level_of_service_var_prediction.(losData_choiceName{i}).(level_of_service_var_ModeX_varNames{j})=transformedMatrix;
+            
+            if strcmp(losData_choiceName{i},'car') && contains(level_of_service_var_ModeX_varNames{j},'travelCost')
+                dataVar=DatasetPrediction.('PartySizeFactor');
+                transformedMatrix(2:end,:)=transformedMatrix(2:end,:).*dataVar(:,ones(1,size(transformedMatrix,2)));
+                level_of_service_var_prediction.(losData_choiceName{i}).(level_of_service_var_ModeX_varNames{j})=transformedMatrix;
+            else
+                level_of_service_var_prediction.(losData_choiceName{i}).(level_of_service_var_ModeX_varNames{j})=transformedMatrix;
+            end
+            
+            
+            
         else
             dataVarName=strsplit(level_of_service_var_ModeX_varNames{j},'_');
             if sum(ismember(dataset_varName,dataVarName{2}))==0
@@ -250,9 +277,17 @@ for i=1:length(losData_choiceName)
                 output=[];
                 return
             end
-            dataVar=DatasetPrediction.(dataVarName{2});
-            transformedMatrix(2:end,:)=transformedMatrix(2:end,:).*dataVar(:,ones(1,size(transformedMatrix,2)));
-            level_of_service_var_prediction.(losData_choiceName{i}).(level_of_service_var_ModeX_varNames{j})=transformedMatrix;
+            
+            if strcmp(losData_choiceName{i},'car') && contains(dataVarName{1},'travelCost')
+                dataVar=DatasetPrediction.(dataVarName{2}).*DatasetPrediction.('PartySizeFactor');
+                transformedMatrix(2:end,:)=transformedMatrix(2:end,:).*dataVar(:,ones(1,size(transformedMatrix,2)));
+                level_of_service_var_prediction.(losData_choiceName{i}).(level_of_service_var_ModeX_varNames{j})=transformedMatrix;
+            else
+                dataVar=DatasetPrediction.(dataVarName{2});
+                transformedMatrix(2:end,:)=transformedMatrix(2:end,:).*dataVar(:,ones(1,size(transformedMatrix,2)));
+                level_of_service_var_prediction.(losData_choiceName{i}).(level_of_service_var_ModeX_varNames{j})=transformedMatrix;
+            end
+            
         end
         % -----------------------------------------------------------------------------------------------------------
         
@@ -263,8 +298,8 @@ for i=1:length(losData_choiceName)
     xNames=zonal_varNames.(losData_choiceName{i}).XNames;
     betaNames=zonal_varNames.(losData_choiceName{i}).betaNames;
     zonal_varNames.(losData_choiceName{i}).X=[];
-    for j=1:length(xNames) 
-        transformedMatrix=nan(length(originZone)+1,length(destinationZoneIDs)); 
+    for j=1:length(xNames)
+        transformedMatrix=nan(length(originZone)+1,length(destinationZoneIDs));
         transformedMatrix(1,:)=destinationZoneIDs;
         
         
@@ -313,7 +348,12 @@ for i=1:length(firstLevel_choiceName)
     beta_belong=[beta_belong;i*ones(length(level_of_service_varnames_i),1)];
     
     N_destination_beta_all=N_destination_beta_all+length(zonal_data_varnames_i)+length(level_of_service_varnames_i);
-    beta_0_varName.(firstLevel_choiceName{i})=zonal_data_varnames_i{1};
+    if ~isempty(zonal_data_varnames_i)
+        beta_0_varName.(firstLevel_choiceName{i})=zonal_data_varnames_i{1};
+    else
+        beta_0_varName.(firstLevel_choiceName{i})='';
+    end
+    
     
 end
 
@@ -338,7 +378,7 @@ beta_indexing_structure.beta_0_varName=beta_0_varName;
 
 % N_choice_accessMode=length(secondLevel_choiceName);
 N_choice_modeChoice=length(firstLevel_choiceName);
-
+Observation_index_ALL=[];
 DestinationCHOICE_All=[];  % DestinationCHOICE_All.(firstLevel_choiceName{i}) gives the destination choice matrix
 zonal_matrix_All=[]; % zonal_matrix_All.(firstLevel_choiceName{i}) gives the zonal matrix structure
 zonal_data_varName_All=[]; % zonal_data_varName_All.(firstLevel_choiceName{i}) gives the string vector of variable names
@@ -376,7 +416,7 @@ end
 
 %%estimate the joint destination model
 destinationChoice_modelResult=conditional_logit_model_destination_choice_log_zonal_joint(Observation_index_ALL,DestinationCHOICE_All,choiceSetIndex,zonal_matrix_All,los_matrix_All,beta_indexing_structure,predictionData,predictionData_prediction);
-% 
+%
 
 
 
@@ -401,7 +441,7 @@ for j=1:length(firstLevel_choiceName)
     validModeChoice(isnan(logsum_temp))=0;
     
     logsum_temp_prediction=logsum_all_prediction.(firstLevel_choiceName{j});
-    Dataset_temp_prediction.(strcat('logsum_',firstLevel_choiceName{j}))=logsum_temp_prediction;  
+    Dataset_temp_prediction.(strcat('logsum_',firstLevel_choiceName{j}))=logsum_temp_prediction;
 end
 Dataset_ModeChoice=Dataset_temp(logical(validModeChoice),:);
 
@@ -481,15 +521,15 @@ fprintf('\nnumber of variables: %10.0f', length(beta_start_fx));
 LL_B_start = destinationChoice_modelResult.model_fit.Loglikelihood_final+MC_overall.model_fit.Loglikelihood_final;
 fprintf('\nLog-likelihood final: %10.3f', LL_B_start)
 
-% 3: (change the value if needed in calculating the null loglikelihood LL_0) 
+% 3: (change the value if needed in calculating the null loglikelihood LL_0)
 LL_0=destinationChoice_modelResult.model_fit.Loglikelihood_zero+MC_overall.model_fit.Loglikelihood_zero;
 fprintf('\nLog-likelihood for zero beta: %10.3f', LL_0);
 
 % 4: Goodness-of-fit
-fprintf('\nMcFadden rho: %5.3f', 1-LL_B_start/LL_0); 
+fprintf('\nMcFadden rho: %5.3f', 1-LL_B_start/LL_0);
 
 % 5: adjusted Goodness-of-fit
-fprintf('\nAdjusted McFadden rho: %5.3f', 1-(LL_B_start-length(beta_start_fx))/LL_0); 
+fprintf('\nAdjusted McFadden rho: %5.3f', 1-(LL_B_start-length(beta_start_fx))/LL_0);
 
 
 
@@ -523,8 +563,8 @@ function [CHOICE,zonal_matrix_full,zonal_matrix_prediction,zonal_data_varName_no
 
 % Global variables that are used by other functions. we recommend that you
 % don't change this.
- 
- 
+
+
 dataset=table2array(Dataset_full(mode_index,:));
 % % importat here!!!!!!!!!!!!!!!!!
 % % replace nan with 0 in the zonal data
@@ -532,7 +572,7 @@ dataset=table2array(Dataset_full(mode_index,:));
 
 dataset_varName=Dataset_full.Properties.VariableNames;
 
-destination_column=find(ismember(dataset_varName,destination_varName));  % gives which column in dataset denotes the destination choice 
+destination_column=find(ismember(dataset_varName,destination_varName));  % gives which column in dataset denotes the destination choice
 
 
 % Calculate choice matrix.
@@ -579,14 +619,14 @@ key=input_LoS_1(1,:); %% destination zone key.
 NP_mode=size(dataset,1);
 NZ_mode=length(key);
 CHOICE=zeros(NP_mode,NZ_mode);
-  for ii=1:NP_mode
+for ii=1:NP_mode
     col= key==dataset(ii,destination_column);
     CHOICE(ii,col)=1;
-  end
+end
 %   for i=1:NP
 %       if sum(CHOICE(i,:))~=1
 %          warning('\nthe following row in the input data does not find a destination in the "Key": %10.0f', i);
-%       end  
+%       end
 %   end
 end
 
