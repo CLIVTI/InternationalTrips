@@ -369,16 +369,14 @@ level_of_service_var_car.carTravelTime=carTime;
 % level_of_service_var_car.travelCost_incomeMissing=carCost;
 level_of_service_var_car.travelCostLog_lowMediumIncome=carCostLog;
 level_of_service_var_car.travelCostLog_highIncome=carCostLog;
-
-
 % bus
 level_of_service_var_bus=[];
 % level_of_service_var_bus.SemesterZone=SemesterZonesMatrixBus;
 level_of_service_var_bus.inVehicleTimeBusTrainAirFerry=busTime;
 % level_of_service_var_bus.logInVehicleTimeBusTrainAirFerry=busTimeLog;
-% level_of_service_var_bus.travelCost_lowMediumIncome=busCost;
-% level_of_service_var_bus.travelCost_highIncome=busCost;
-% level_of_service_var_bus.travelCost_incomeMissing=busCost;
+level_of_service_var_bus.travelCost_lowMediumIncome=busCost;
+level_of_service_var_bus.travelCost_highIncome=busCost;
+level_of_service_var_bus.travelCost_incomeMissing=busCost;
 level_of_service_var_bus.travelCostLog_lowMediumIncome=busCostLog;
 level_of_service_var_bus.travelCostLog_highIncome=busCostLog;
 
@@ -419,12 +417,13 @@ level_of_service_var_air=[];
 % end
 % airTime_threshold1(:,1)=AirInVehicleTime(:,1);
 % airTime_threshold2(:,1)=AirInVehicleTime(:,1);
-
 % level_of_service_var_air.SemesterZone=SemesterZonesMatrixAir;
 level_of_service_var_air.accessEgressTimeTrainAirFerry=AirAccessEgressTime;
 level_of_service_var_air.numberTransferTrainAirFerry=airNTransfer;
 level_of_service_var_air.inVehicleTimeBusTrainAirFerry=AirInVehicleTime;
 % level_of_service_var_air.logInVehicleTimeBusTrainAirFerry=AirInVehicleTimeLog;
+
+
 % level_of_service_var_air.travelCost_lowMediumIncome=airCost;
 % level_of_service_var_air.travelCost_highIncome=airCost;
 % level_of_service_var_air.travelCost_incomeMissing=airCost;
@@ -456,20 +455,20 @@ level_of_service_var.(mode_choice_names{5})=level_of_service_var_ferry;
 %% specify mode choice part
 
 % all variable names {'female','VILLA','age_64','age_18_30','age_17','BILANT'}
-beta_names_fix.(mode_choice_names{1})={'NcarInHH','bil_female','bil_VILLA'};   % walk
-X_names_fix.(mode_choice_names{1})={'BILANT','female','VILLA'};  % walk
+beta_names_fix.(mode_choice_names{1})={'NcarInHH','bil_female'};   % walk
+X_names_fix.(mode_choice_names{1})={'BILANT','female'};  % walk
 
 beta_names_fix.(mode_choice_names{2})={'bus_ASC','bus_age_17','bus_age_64'};  
 X_names_fix.(mode_choice_names{2})={'ASC','age_17','age_64'};  
 
-beta_names_fix.(mode_choice_names{3})={'train_ASC'};   
-X_names_fix.(mode_choice_names{3})={'ASC'};  
+beta_names_fix.(mode_choice_names{3})={'train_ASC','train_age_64'};   
+X_names_fix.(mode_choice_names{3})={'ASC','age_64'};  
 
-beta_names_fix.(mode_choice_names{4})={'air_ASC','air_age_17','air_age_64'};  
-X_names_fix.(mode_choice_names{4})={'ASC','age_17','age_64'};  
+beta_names_fix.(mode_choice_names{4})={'air_ASC','air_age_64'};  
+X_names_fix.(mode_choice_names{4})={'ASC','age_64'};  
 
-beta_names_fix.(mode_choice_names{5})={'ferry_ASC','ferry_age_17'};  
-X_names_fix.(mode_choice_names{5})={'ASC','age_17'};  
+beta_names_fix.(mode_choice_names{5})={'ferry_ASC','ferry_age_64'};  
+X_names_fix.(mode_choice_names{5})={'ASC','age_64'};  
 
 
 model_specification_modeChoice=[];

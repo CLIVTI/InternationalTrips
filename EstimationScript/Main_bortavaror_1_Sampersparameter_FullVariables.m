@@ -52,13 +52,13 @@ AirCostPath='LOS/Air/TicketPrice.xlsx';
 AirTransferPath='LOS/Air/NumberofFlights.xlsx';
 
 % Ferry
-FerryInVehicleTimeFilePath='LOS/Ferry/InVehicleTime.xlsx';
-FerryHeadwayPath='LOS/Ferry/Headway.xlsx';
-FerryAccessEgressTimePath='LOS/Ferry/AccessEgressTime.xlsx';
-FerryCostPath='LOS/Ferry/TravelCost.xlsx';
-FerryDistancePath='LOS/Ferry/TravelDistanceKM_Ferry.xlsx';
-DistancePath='LOS/Ferry/TravelDistanceKM.xlsx';
-FerryNumberLineUsedPath='LOS/Ferry/NumberOfFerryLinesUsed.xlsx';
+FerryInVehicleTimeFilePath='LOS/Ferry/NoWaitingTimeRouting/InVehicleTime.xlsx';
+FerryHeadwayPath='LOS/Ferry/NoWaitingTimeRouting/Headway.xlsx';
+FerryAccessEgressTimePath='LOS/Ferry/NoWaitingTimeRouting/AccessEgressTime.xlsx';
+FerryCostPath='LOS/Ferry/NoWaitingTimeRouting/TravelCost.xlsx';
+FerryDistancePath='LOS/Ferry/NoWaitingTimeRouting/TravelDistanceKM_Ferry.xlsx';
+DistancePath='LOS/Ferry/NoWaitingTimeRouting/TravelDistanceKM.xlsx';
+FerryNumberLineUsedPath='LOS/Ferry/NoWaitingTimeRouting/NumberOfFerryLinesUsed.xlsx';
 %% model specifications
 mode_choice_names={'car','bus','train','air','ferry'};
 ModeChoice_varname='Mode';
@@ -187,6 +187,7 @@ SemesterZonesMatrixCar(2:end,2:end)=SemesterZonesDummy(ones(size(carTime,1)-1,1)
 
 for i=1:(size(carDistance,1)-1)
     noUsedIndex=carDistance(i+1,:)<100 | carTime(i+1,:)>480;
+    noUsedIndex(1)=0;
     SemesterZonesMatrixCar(i+1,noUsedIndex)=nan;
     carTime(i+1,noUsedIndex)=nan;
     carTimeLog(i+1,noUsedIndex)=nan;
@@ -217,6 +218,7 @@ SemesterZonesMatrixBus(2:end,2:end)=SemesterZonesDummy(ones(size(busTime,1)-1,1)
 
 for i=1:(size(busDistance,1)-1)
     noUsedIndex=busDistance(i+1,:)<100 | busTime(i+1,:)>480;
+    noUsedIndex(1)=0;
     SemesterZonesMatrixBus(i+1,noUsedIndex)=nan;
     busTime(i+1,noUsedIndex)=nan;
     busTimeLog(i+1,noUsedIndex)=nan;
@@ -258,6 +260,7 @@ SemesterZonesMatrixTrain(2:end,2:end)=SemesterZonesDummy(ones(size(TrainInVehicl
 
 for i=1:(size(trainDistance,1)-1)
     noUsedIndex=trainCost(i+1,:)==0 | trainDistance(i+1,:)<100 | TrainTotalTime(i+1,:)>480;
+    noUsedIndex(1)=0;
     SemesterZonesMatrixTrain(i+1,noUsedIndex)=nan;
     trainImpedance(i+1,noUsedIndex)=nan;
     TrainInVehicleTime(i+1,noUsedIndex)=nan;
@@ -297,6 +300,7 @@ SemesterZonesMatrixAir(2:end,2:end)=SemesterZonesDummy(ones(size(AirInVehicleTim
 
 for i=1:(size(airCost,1)-1)
     noUsedIndex=airNTransfer(i+1,:)==0 | AirInVehicleTime(i+1,:)<100/850*60 | AirTotalTime(i+1,:)>480;
+    noUsedIndex(1)=0;
     SemesterZonesMatrixAir(i+1,noUsedIndex)=nan;
     AirInVehicleTime(i+1,noUsedIndex)=nan;
     airCost(i+1,noUsedIndex)=nan;
@@ -344,6 +348,7 @@ SemesterZonesMatrixFerry(2:end,2:end)=SemesterZonesDummy(ones(size(FerryInVehicl
 % we assume that if there is no ferry line used, the destination is not available, code as nan.
 for i=1:(size(ferryNTransfer,1)-1)
     noFerryUsedIndex=ferryNTransfer(i+1,:)==0 | FerryDistanceFullTrip(i+1,:)<100 | FerryTotalTime(i+1,:)>480;
+    noFerryUsedIndex(1)=0;
     SemesterZonesMatrixFerry(i+1,noFerryUsedIndex)=nan;
     FerryInVehicleTime(i+1,noFerryUsedIndex)=nan;
     ferryCost(i+1,noFerryUsedIndex)=nan;

@@ -420,9 +420,10 @@ airTime_threshold1(:,1)=AirInVehicleTime(:,1);
 airTime_threshold2(:,1)=AirInVehicleTime(:,1);
 level_of_service_var_air.SemesterZone=SemesterZonesMatrixAir;
 level_of_service_var_air.accessEgressTimeTrainAirFerry=AirAccessEgressTime;
-% level_of_service_var_air.numberTransferTrainAirFerry=airNTransfer;
-level_of_service_var_air.inVehicleTimeAirEU=airTimeEU;
-level_of_service_var_air.inVehicleTimeAirOutEU=airTimeInternational;
+level_of_service_var_air.numberTransferTrainAirFerry=airNTransfer;
+level_of_service_var_air.inVehicleTimeAir=AirInVehicleTime;
+% level_of_service_var_air.inVehicleTimeAirEU=airTimeEU;
+% level_of_service_var_air.inVehicleTimeAirOutEU=airTimeInternational;
 % level_of_service_var_air.logInVehicleTimeAir=AirInVehicleTimeLog;
 
 % 

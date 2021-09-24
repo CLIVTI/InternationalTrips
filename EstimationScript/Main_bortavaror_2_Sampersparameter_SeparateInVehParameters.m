@@ -364,21 +364,21 @@ level_of_service_var_car=[];
 level_of_service_var_car.SemesterZone=SemesterZonesMatrixCar;
 % level_of_service_var_car.carTravelTime=carTime;
 level_of_service_var_car.carLogTravelTime=carTimeLog;
-% level_of_service_var_car.travelCost_lowMediumIncome=carCost;
-% level_of_service_var_car.travelCost_highIncome=carCost;
-% level_of_service_var_car.travelCost_incomeMissing=carCost;
-level_of_service_var_car.travelCostLog_lowMediumIncome=carCostLog;
-level_of_service_var_car.travelCostLog_highIncome=carCostLog;
+level_of_service_var_car.travelCost_lowMediumIncome=carCost;
+level_of_service_var_car.travelCost_highIncome=carCost;
+level_of_service_var_car.travelCost_incomeMissing=carCost;
+% level_of_service_var_car.travelCostLog_lowMediumIncome=carCostLog;
+% level_of_service_var_car.travelCostLog_highIncome=carCostLog;
 % bus
 level_of_service_var_bus=[];
 level_of_service_var_bus.SemesterZone=SemesterZonesMatrixBus;
 level_of_service_var_bus.inVehicleTimeBusTrainFerry=busTime;
 % level_of_service_var_bus.logInVehicleTimeBusTrainAirFerry=busTimeLog;
-% level_of_service_var_bus.travelCost_lowMediumIncome=busCost;
-% level_of_service_var_bus.travelCost_highIncome=busCost;
-% level_of_service_var_bus.travelCost_incomeMissing=busCost;
-level_of_service_var_bus.travelCostLog_lowMediumIncome=busCostLog;
-level_of_service_var_bus.travelCostLog_highIncome=busCostLog;
+level_of_service_var_bus.travelCost_lowMediumIncome=busCost;
+level_of_service_var_bus.travelCost_highIncome=busCost;
+level_of_service_var_bus.travelCost_incomeMissing=busCost;
+% level_of_service_var_bus.travelCostLog_lowMediumIncome=busCostLog;
+% level_of_service_var_bus.travelCostLog_highIncome=busCostLog;
 
 % train
 level_of_service_var_train=[];
@@ -388,11 +388,11 @@ level_of_service_var_train.accessEgressTimeTrainFerry=TrainAccessEgressTime;
 level_of_service_var_train.numberTransferTrainFerry=trainNTransfer;
 level_of_service_var_train.inVehicleTimeBusTrainFerry=TrainInVehicleTime;
 % level_of_service_var_train.logInVehicleTimeBusTrainAirFerry=TrainInVehicleTimeLog;
-% level_of_service_var_train.travelCost_lowMediumIncome=trainCost;
-% level_of_service_var_train.travelCost_highIncome=trainCost;
-% level_of_service_var_train.travelCost_incomeMissing=trainCost;
-level_of_service_var_train.travelCostLog_lowMediumIncome=trainCostLog;
-level_of_service_var_train.travelCostLog_highIncome=trainCostLog;
+level_of_service_var_train.travelCost_lowMediumIncome=trainCost;
+level_of_service_var_train.travelCost_highIncome=trainCost;
+level_of_service_var_train.travelCost_incomeMissing=trainCost;
+% level_of_service_var_train.travelCostLog_lowMediumIncome=trainCostLog;
+% level_of_service_var_train.travelCostLog_highIncome=trainCostLog;
 
 % flight
 level_of_service_var_air=[];
@@ -418,17 +418,17 @@ level_of_service_var_air=[];
 % airTime_threshold1(:,1)=AirInVehicleTime(:,1);
 % airTime_threshold2(:,1)=AirInVehicleTime(:,1);
 level_of_service_var_air.SemesterZone=SemesterZonesMatrixAir;
-level_of_service_var_air.accessEgressTimeAir=AirAccessEgressTime;
-level_of_service_var_air.numberTransferAir=airNTransfer;
+% level_of_service_var_air.accessEgressTimeAir=AirAccessEgressTime;
+% level_of_service_var_air.numberTransferAir=airNTransfer;
 level_of_service_var_air.inVehicleTimeAir=AirInVehicleTime;
 % level_of_service_var_air.logInVehicleTimeBusTrainAirFerry=AirInVehicleTimeLog;
 
 
-% level_of_service_var_air.travelCost_lowMediumIncome=airCost;
-% level_of_service_var_air.travelCost_highIncome=airCost;
-% level_of_service_var_air.travelCost_incomeMissing=airCost;
-level_of_service_var_air.travelCostLog_lowMediumIncome=airCostLog;
-level_of_service_var_air.travelCostLog_highIncome=airCostLog;
+level_of_service_var_air.travelCost_lowMediumIncome=airCost;
+level_of_service_var_air.travelCost_highIncome=airCost;
+level_of_service_var_air.travelCost_incomeMissing=airCost;
+% level_of_service_var_air.travelCostLog_lowMediumIncome=airCostLog;
+% level_of_service_var_air.travelCostLog_highIncome=airCostLog;
 
 % ferry
 level_of_service_var_ferry=[];
@@ -438,11 +438,11 @@ level_of_service_var_ferry.accessEgressTimeTrainFerry=FerryAccessEgressTime;
 level_of_service_var_ferry.numberTransferTrainFerry=ferryNTransfer;
 level_of_service_var_ferry.inVehicleTimeBusTrainFerry=FerryInVehicleTime;
 % level_of_service_var_ferry.logInVehicleTimeBusTrainAirFerry=FerryInVehicleTimeLog;
-% level_of_service_var_ferry.travelCost_lowMediumIncome=ferryCost;
-% level_of_service_var_ferry.travelCost_highIncome=ferryCost;
-% level_of_service_var_ferry.travelCost_incomeMissing=ferryCost;
-level_of_service_var_ferry.travelCostLog_lowMediumIncome=ferryCostLog;
-level_of_service_var_ferry.travelCostLog_highIncome=ferryCostLog;
+level_of_service_var_ferry.travelCost_lowMediumIncome=ferryCost;
+level_of_service_var_ferry.travelCost_highIncome=ferryCost;
+level_of_service_var_ferry.travelCost_incomeMissing=ferryCost;
+% level_of_service_var_ferry.travelCostLog_lowMediumIncome=ferryCostLog;
+% level_of_service_var_ferry.travelCostLog_highIncome=ferryCostLog;
 
 
 
