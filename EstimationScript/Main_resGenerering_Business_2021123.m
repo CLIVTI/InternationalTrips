@@ -48,7 +48,7 @@ addpath(genpath(PathStorage))
       
 
 %% estimation script
-RVUFilePath='//vti.se/root/Internationella-resor/R skript/RVU/R/LVDREstimation_reseGenerering.csv';
+RVUFilePath='//vti.se/root/Internationella-resor/R skript/RVU/R/LVDREstimation_reseGenerering_business.csv';
 opts = detectImportOptions(RVUFilePath);
 RVU=readtable(RVUFilePath,opts);
 
@@ -56,10 +56,10 @@ RVU=readtable(RVUFilePath,opts);
 RVU.BILANT(isnan(RVU.BILANT))=0;
 
 % income
-RVU.lowIncome=RVU.HHINK<=250000;
-RVU.mediumIncome=RVU.HHINK>250000 & RVU.HHINK<500000;
-RVU.highIncome=RVU.HHINK>=500000;
-RVU.incomeMissing=isnan(RVU.HHINK);
+RVU.lowIncome=RVU.INKUP<300000;
+RVU.highIncome=RVU.INKUP>=300000;
+RVU.incomeMissing=isnan(RVU.INKUP);
+
 % age
 RVU.age_17=RVU.AGE<18;
 RVU.age_18_30=RVU.AGE>=18 & RVU.AGE<=30;
@@ -88,22 +88,17 @@ RVU.AntalStoreBarn=(RVU.HHTYP==15).*2;
 % Y variable
 RVU.LongDistanceTripType=zeros(size(RVU,1),1);
 RVU.LongDistanceTripType(RVU.bortavaro==0)=1;
-RVU.LongDistanceTripType(RVU.bortavaro==1)=2;
-RVU.LongDistanceTripType(RVU.bortavaro==2 | RVU.bortavaro==3)=3;
-RVU.LongDistanceTripType(RVU.bortavaro==4)=4;
-nanIndex=isnan(RVU.logsumBortavaro_1) | isnan(RVU.logsumBortavaro_2) | isnan(RVU.logsumBortavaro_3) | RVU.LongDistanceTripType==0;
+RVU.LongDistanceTripType(RVU.bortavaro>0)=2;
+nanIndex=isnan(RVU.logsumBortavaro) | RVU.LongDistanceTripType==0;
 RVUEstimation=RVU(~nanIndex,:);
-RVUEstimation=RVUEstimation(RVUEstimation.LongDistanceTripType>0,:);
-RVUEstimation.summer_Logsum_1=RVUEstimation.summer.*RVUEstimation.logsumBortavaro_1;
-RVUEstimation.Nosummer_Logsum_1=RVUEstimation.NotSummer.*RVUEstimation.logsumBortavaro_1;
-RVUEstimation.summer_Logsum_2=RVUEstimation.summer.*RVUEstimation.logsumBortavaro_2;
-RVUEstimation.Nosummer_Logsum_2=RVUEstimation.NotSummer.*RVUEstimation.logsumBortavaro_2;
-RVUEstimation.summer_Logsum_3=RVUEstimation.summer.*RVUEstimation.logsumBortavaro_3;
-RVUEstimation.Nosummer_Logsum_3=RVUEstimation.NotSummer.*RVUEstimation.logsumBortavaro_3;
+RVUEstimation=RVUEstimation(RVUEstimation.LongDistanceTripType>0 & RVUEstimation.AGE>18,:);
+RVUEstimation.summer_Logsum=RVUEstimation.summer.*RVUEstimation.logsumBortavaro;
+RVUEstimation.Nosummer_Logsum=RVUEstimation.NotSummer.*RVUEstimation.logsumBortavaro;
+
 
 
 Y_names={'LongDistanceTripType'};
-choice_name={'NoTrip','UnderDagen','Natter15','Natter6'};
+choice_name={'NoTrip','Trip'};
 
 beta_names_fix={};
 X_names_fix={};
@@ -120,17 +115,16 @@ X_names_fix={};
 % beta_names_fix.(choice_name{4})={'6+Natt_ASC','6+Natt_AntalBilar','6+Natt_female','6+Natt_Villa','6+Natt_age_17','6+Natt_age_31_64','6+Natt_age_64','6+Natt_highIncome','6+Natt_incomeMissing','6+Natt_summer','6+Natt_AntalSmallBarn','6+Natt_AntalStoreBarn','6+Natt_logsum'};   % ICEV
 % X_names_fix.(choice_name{4})={'ASC','BILANT','female','VILLA','age_17','age_31_64','age_64','highIncome','incomeMissing','summer','AntalSmallBarn','AntalStoreBarn','logsumBortavaro_3'};    % ICEV
 
-beta_names_fix.(choice_name{1})={'NoTrip_lowIncome'};   % ICEV
-X_names_fix.(choice_name{1})={'lowIncome'};    % ICEV
+beta_names_fix.(choice_name{1})={'NoTrip_lowIncome'};   
+X_names_fix.(choice_name{1})={'lowIncome'};   
+beta_names_fix.(choice_name{2})={'Trip_ASC','Trip_AntalBilar','Trip_female','Trip_age_31_64','Trip_age_64','Trip_highIncome','Trip_summer','Trip_Jul'};   % 'logsum'
+X_names_fix.(choice_name{2})={'ASC','BILANT','female','age_31_64','age_64','highIncome','summer','Jul'};    % 'logsumBortavaro'
 
-beta_names_fix.(choice_name{2})={'0Natt_ASC','0Natt_incomeMissing','0Natt_Logsum'};   % ICEV
-X_names_fix.(choice_name{2})={'ASC','incomeMissing','logsumBortavaro_1'};    % ICEV
 
-beta_names_fix.(choice_name{3})={'1_5Natt_ASC','1_5Natt_age_17','1_5Natt_highIncome','1_5Natt_incomeMissing','1_5Natt_summer','1_5Natt_Jul','1_5Natt_AntalSmallBarn','1_5Natt_AntalStoreBarn'};   % ICEV
-X_names_fix.(choice_name{3})={'ASC','age_17','highIncome','incomeMissing','summer','Jul','AntalSmallBarn','AntalStoreBarn'};    % ICEV
-
-beta_names_fix.(choice_name{4})={'6+Natt_ASC','6+Natt_female','6+Natt_age_64','6+Natt_incomeMissing','6+Natt_summer','6+Natt_Jul','6+Natt_AntalSmallBarn','6+Natt_AntalStoreBarn','6+Natt_Logsum'};   % ICEV
-X_names_fix.(choice_name{4})={'ASC','female','age_64','incomeMissing','summer','Jul','AntalSmallBarn','AntalStoreBarn','logsumBortavaro_3'};    % ICEV
+% beta_names_fix.(choice_name{1})={};   
+% X_names_fix.(choice_name{1})={};   
+% beta_names_fix.(choice_name{2})={'Trip_ASC','Trip_logsum'};   % ICEV
+% X_names_fix.(choice_name{2})={'ASC','logsumBortavaro'};    % ICEV
 
 
 output=MNL_model(RVUEstimation,beta_names_fix,X_names_fix,Y_names,choice_name,RVUEstimation,1);

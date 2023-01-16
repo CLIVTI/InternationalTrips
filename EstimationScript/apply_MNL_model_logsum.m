@@ -1,6 +1,6 @@
 
 %-------------------------------------------------------
-function output=MNL_model(Dataset,specific_names_fix,specific_names_X_fix,Y_names,choice_name,Dataset_Full,displayResult) % note that ASC has been included in both "specific_names_fix" and "variables"
+function output=apply_MNL_model_logsum(ModeChoiceBeta,Dataset,specific_names_fix,specific_names_X_fix,Y_names,choice_name,logsum_var,Dataset_Full,displayResult) % note that ASC has been included in both "specific_names_fix" and "variables"
 % the simple benchmark MNL model
 % input:
 %        DATA is the matrix of the data
@@ -56,165 +56,26 @@ if ~ismember(title_full,'ASC')
 end
 
 
-
-SpecifyVariables_1(DATA,title,specific_names_fix,specific_names_X_fix,Y_names,choice_name,DATA_full,title_full);
-% Initial parameter values
-beta_start_fx = zeros(N_FX,1);
-beta_start=[beta_start_fx];
-
-options = optimoptions('fminunc','Algorithm','quasi-newton','SpecifyObjectiveGradient',true,'Display','iter','TolFun',1e-10,'TolX',1e-10,'MaxFunEvals',100000,'MaxIter',30000);
-% options = optimset('GradObj','on','LargeScale','off','Display','off','TolFun',1e-6,'TolX',1e-6','MaxFunEvals',100000,'MaxIter',30000);
-[beta,~,~,~,~,hessian_initial]= fminunc(@LogLikelihood_MNL,beta_start,options); % '@' is a handle for the LogLikelihood below
-% options = optimset('Display','iter','Algorithm','interior-point','TolFun',1e-5,'GradObj','on');
-% A=zeros(length(logsum_mu)*2,length(beta_start));
-% b=zeros(length(logsum_mu)*2,1);
-% for i=1:length(logsum_mu)
-%     A(i,N_FX+i)=1;
-%     b(i)=1;
-%     A(i+1,N_FX+i)=-1;
-%     b(i+1)=0;
-% end
-% Aeq=[];
-% beq=[];
-% lb=[];
-% ub=[];
-% nonlcon=[];
-%   [beta,~,~,~,lambda,~,hessian_initial]=fmincon(@LogLikelihood_MNL,beta_start,A,b,Aeq,beq,lb,ub,nonlcon,options);
-sigma=sqrt(diag(inv(hessian_initial)));
-tvalues = beta./sigma;
-% 1: display parameter estimates and t-statistics
-cov_full=inv(hessian_initial);
-% Ma=zeros(length(logsum_mu),length(logsum_mu));
-% beta_mu=beta(N_FX+1:N_FX+length(logsum_mu));
-% for i=1:length(choice_name)
-%     Ma(i,i)=-1./(beta_mu(i)^2);
-% end
-% cov_mu_final=Ma'*cov_mu*Ma;
-% sigma_mu=sqrt(diag(cov_mu_final));
-% t_value_mu=beta_mu./sigma_mu;
-
-
-
-
-fprintf('\n\n----------------- DISPLAY RESULTS ---------------------')
-for i=1:length(descriptive_choice)
-    fprintf('\n number of obs choosing %-5s : %+5.0f', choice_name{i} , descriptive_choice(i) )
+if length(logsum_var)~=length(choice_name)
+    disp('logsum variables must have the same length as number of alternatives')
+    return
 end
 
-fprintf('\n')
-fprintf('\n %-15s : %8s : %8s \n' , ['Parameter'],['Estimate'],['t-value']);
-organized_beta_fix={};
-organized_tvalue_fix={};
-organized_beta_fix_name={};
+SpecifyVariables_1(DATA,title,specific_names_fix,specific_names_X_fix,Y_names,choice_name,logsum_var,DATA_full,title_full);
 
-
-
-
-
-for i=1:length(choice_name)
-    organized_beta_fix.(choice_name{i})=[];
-    organized_tvalue_fix.(choice_name{i})=[];
-    organized_beta_fix_name.(choice_name{i})={};
-end
-
-
-
-
-for k = 1:N_FX
-    
-    fprintf('%-15s : %+8.4f : %+8.4f \n', LAB_FX{k} , beta(k) , tvalues(k))
-    alt_index=find(FX_alt(k,:)==1, length(choice_name));
-    if ~isempty(alt_index)
-        for m=1:length(alt_index)
-            organized_beta_fix.(choice_name{alt_index(m)})=[organized_beta_fix.(choice_name{alt_index(m)}),beta(k)];
-            organized_tvalue_fix.(choice_name{alt_index(m)})=[organized_tvalue_fix.(choice_name{alt_index(m)}),tvalues(k)];
-            organized_beta_fix_name.(choice_name{alt_index(m)})=[organized_beta_fix_name.(choice_name{alt_index(m)}),LAB_FX{k}];
-        end
-    end
-end
-
-
-
-
-
-% output is a strucuture saving all parameter values and X_names
-
-output.('organized_beta')=organized_beta_fix;
-output.('beta')=beta;
-output.('organized_beta_tvalue')=organized_tvalue_fix;
-output.('beta_tvalue')=tvalues;
-output.('organized_beta_names')=organized_beta_fix_name;
-output.('beta_names')=[LAB_FX];
-output.('organized_variable_name')=specific_names_X_fix;
-output.('hessian')=hessian_initial;
-output.('diag_inv_hessian')=diag(inv(hessian_initial));
-
-LL_B = -LogLikelihood_MNL(beta);
-LL_0 = -LogLikelihood_MNL(0*beta); % LL for zero model
-
-
-
-fprintf('\nnumber of observations: %10.0f', NP);
-% 2: Log Likelihood values
-
-fprintf('\nLog-likelihood: %10.3f', LL_B);
-
-% 3: (change the value if needed in calculating the null loglikelihood LL_0)
-
-fprintf('\nLog-likelihood for zero beta: %10.3f', LL_0);
-
-% 4: Goodness-of-fit
-fprintf('\nMcFadden rho: %5.3f', 1-LL_B/LL_0);
-
-% 5: adjusted Goodness-of-fit
-fprintf('\nAdjusted McFadden rho: %5.3f', 1-(LL_B-length(beta))/LL_0);
-
-% 5: LL for alternative-specific constants only
-% (according to first-order condition, compare sum_predchoice below)
-
-
-
-
-%create choosen choice
-unique_choice=unique(CHOICE);
-N_tot=length(CHOICE);
-N_choice=length(unique_choice);
-sum_choices=zeros(1,N_choice);
-
-for i=1:N_choice
-    sum_choices(i)=sum(CHOICE==unique_choice(i));
-end
-LL_C = sum_choices*log(sum_choices/N_tot)';
-
-
-fprintf('\nLog-likelihood for constants only: %6.2f', LL_C);
-
-
-
-
-
-% output the model fit
-model_fit_info={};
-model_fit_info.('Loglikelihood_final')=LL_B;
-model_fit_info.('Loglikelihood_zero')=LL_0;
-model_fit_info.('adjusted_McFadden_rho')=1-(LL_B-length(beta))/LL_0;
-model_fit_info.('Loglikelihood_intercept')=LL_C;
-output.('model_fit')=model_fit_info;
-
-
-F = beta(1:N_FX); % Fixed parameters
-
-[log_P_fullData,~,log_sum_fullData]  =Logit_logsum(F);
+F=ModeChoiceBeta(1:(end-1));
+logsum_mu=ModeChoiceBeta(end);
+[log_P_fullData,~,log_sum_fullData]  =Logit_logsum(F,logsum_mu);
 output.('logsum_fullData')=log_sum_fullData;
 output.('probability_fullData')=exp(log_P_fullData);
-[log_P_sample,~,log_sum_sample]  =Logit(F);
+[log_P_sample,~,log_sum_sample]  =Logit(F,logsum_mu);
 output.('logsum_sample')=log_sum_sample;
 output.('probability_sample')=exp(log_P_sample);
 end
 
 
 
-function [log_P,V,log_sum]  =Logit_logsum(F)
+function [log_P,V,log_sum]  =Logit_logsum(F,logsum_mu)
 % input: F is the vector of parameters, 1*N_FX vector
 % output: log_P is the log of probability of choosing each alternative,
 %         N_obs*N_choice dimension
@@ -225,7 +86,7 @@ global N_choice NP_full
 % LOGIT(F) returns the likelihood and log-likelihood of the observaitions
 % in VAR_FX for the fixed parameters F
 % F is N_RD x NP
-[V]=Utilities_logsum(F);  % deri_mu  (NP,N_choice) dimension
+[V]=Utilities_logsum(F,logsum_mu);  % deri_mu  (NP,N_choice) dimension
 % V is the utility matrix which has (N_obs*N_choice) dimension
 % there is a risk of exp function that is if exp(V_late_response) is too large,
 % there is potential to make exp(V_late_response) a inf or nan.
@@ -245,9 +106,9 @@ end
 
 end
 
-function [V_utility]  = Utilities_logsum(F)
+function [V_utility]  = Utilities_logsum(F,logsum_mu)
 global N_choice NP_full choice_names I_BETA_FX
-global F_X_full
+global F_X_full logsum_col_full
 % Calculate the utilites for the different choices.
 % input: F is a vector of parameters (1*N_FX)
 % output: V_utility is a utility matrix (N_obs*N_choice)
@@ -256,9 +117,9 @@ V_utility=zeros(NP_full,N_choice);
 for i=1:N_choice
     if isempty(F_X_full.(choice_names{i}))==1
         F_X_full.(choice_names{i})=ones(NP_full,0);
-        V_utility(:,i)=F_X_full.(choice_names{i})*ones(0,1);
+        V_utility(:,i)=F_X_full.(choice_names{i})*ones(0,1)+logsum_mu.*logsum_col_full.(choice_names{i});
     else
-        V_utility(:,i)=F_X_full.(choice_names{i})*F(I_BETA_FX.(choice_names{i}));
+        V_utility(:,i)=F_X_full.(choice_names{i})*F(I_BETA_FX.(choice_names{i}))+logsum_mu.*logsum_col_full.(choice_names{i});
     end
     %               [log_sum_part,deri_log_sum_i]=logsum_eva(logsum_mu,logsum_col(:,i));
     
@@ -268,7 +129,7 @@ end
 
 
 %  SpecifyVariables_1(DATA,title,specific_names_fix,specific_names_X_fix,Y_names,choice_name);
-function SpecifyVariables_1(DATA,title,specific_names_fix,specific_names_X_fix,Y_names,choice_name,Dataset_Full,title_full)
+function SpecifyVariables_1(DATA,title,specific_names_fix,specific_names_X_fix,Y_names,choice_name,logsum_var,Dataset_Full,title_full)
 % CHOOSEVARIABLES structure and transforms the data in file 'filename' to a
 % more usable form. Here, is where you specify the variables to be included
 % in the model and whether they are fixed or random and whether thet are
@@ -279,9 +140,9 @@ function SpecifyVariables_1(DATA,title,specific_names_fix,specific_names_X_fix,Y
 % Global variables that are used by other functions. we recommend that you
 % don't change this.
 global CHOICEIDX CHOICE N_FX unique_choice I_BETA_FX
-global F_X F_index N_choice choice_names LAB_FX
-global F_X_full
-global FX_alt descriptive_choice
+global F_X F_index N_choice choice_names LAB_FX logsum_col
+global F_X_full logsum_col_full
+global FX_alt NP descriptive_choice
 
 %%%%%%%%%% Prepare data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load the data from 'filename' and save it to the structure D.
@@ -340,6 +201,15 @@ end
 
 F_X_full=variables_full;
 
+logsum_col={};
+for i=1:length(choice_name)
+    logsum_col.(choice_name{i})=DATA(:,ismember(title,logsum_var{i}));
+end
+
+logsum_col_full={};
+for i=1:length(choice_name)
+    logsum_col_full.(choice_name{i})=Dataset_Full(:,ismember(title_full,logsum_var{i}));
+end
 
 name_fix={};
 
@@ -380,29 +250,22 @@ end
         % k in the likelihood-function.
         CHOICE=DATA(:,ismember(title,Y_names) ) ;
         unique_choice=unique(CHOICE);
-        CHOICE_order=CHOICE;
-        if any(unique_choice' ~= (1:length(unique_choice)))
-            for m = 1:length(unique_choice)
-                CHOICE_order(CHOICE==unique_choice(m)) = m;
-            end
-        end
-        
-        
         r=length(CHOICE);
         rows=(1:r)';
-        CHOICEIDX=(CHOICE_order-1)*r + rows;
+        CHOICEIDX=(CHOICE-1)*r + rows;
     end
 end
 
 function [LL,g] = LogLikelihood_MNL(beta)
-global CHOICEIDX F_X N_FX N_choice choice_names  NP I_BETA_FX;
+global CHOICEIDX F_X N_FX N_choice choice_names  NP I_BETA_FX logsum_col;
 % important: F_index is a structure where ith element is an index vector (0,1
 % vector) where 1 means the coresponding location in beta belongs to
 % the ith alternative
 F = beta(1:N_FX); % Fixed parameters
+logsum_mu=beta(N_FX+1);
 
 % P is a NP x NV matrix
-[log_P,~,~]=Logit(F);
+[log_P,~,~]=Logit(F,logsum_mu);
 % output: log_P is the log of probability of choosing each alternative,
 %         N_obs*N_choice dimension
 %         V is utility vector (N_obs*N_choice) dimension
@@ -413,7 +276,7 @@ log_P_choosen = log_P(CHOICEIDX);
 % P_choosen is a
 LL = -sum((log_P_choosen));
 
-g=zeros(N_FX,1);
+g=zeros(N_FX+1,1);
 
 for i=1:length(F)
     X_i=zeros(NP,N_choice);
@@ -432,10 +295,32 @@ for i=1:length(F)
     g(i)=-sum(grad_chosen);
 end
 
+
+for i=1  % for i=1:N_mu
+    grad_mu=zeros(NP,N_choice);
+    sum_P_mu=zeros(NP,N_choice);
+    for j=1:N_choice
+        sum_P_mu(:,j)=logsum_col.(choice_names{j});
+    end
+    sum_X_exp=sum(sum_P_mu.*P,2);
+    for j=1:N_choice
+        grad_mu(:,j)=logsum_col.(choice_names{j})-sum_X_exp;
+        %         if j==i
+        %             grad_mu(:,j)=deri_mu(:,j)-P(:,j).*deri_mu(:,j);
+        %         else
+        %             grad_mu(:,j)=-P(:,i).*deri_mu(:,i);
+        %         end
+    end
+    grad_chosen=grad_mu(CHOICEIDX);
+    g(N_FX+i)=-sum(grad_chosen);
+end
+
+
+
 end
 
 %-------------------------------------------------------
-function [log_P,V,log_sum]  =Logit(F)
+function [log_P,V,log_sum]  =Logit(F,logsum_mu)
 % input: F is the vector of parameters, 1*N_FX vector
 % output: log_P is the log of probability of choosing each alternative,
 %         N_obs*N_choice dimension
@@ -446,7 +331,7 @@ global N_choice NP
 % LOGIT(F) returns the likelihood and log-likelihood of the observaitions
 % in VAR_FX for the fixed parameters F
 % F is N_RD x NP
-[V]=Utilities(F);  % deri_mu  (NP,N_choice) dimension
+[V]=Utilities(F,logsum_mu);  % deri_mu  (NP,N_choice) dimension
 % V is the utility matrix which has (N_obs*N_choice) dimension
 % there is a risk of exp function that is if exp(V_late_response) is too large,
 % there is potential to make exp(V_late_response) a inf or nan.
@@ -465,8 +350,8 @@ end
 end
 
 
-function [V_utility]  = Utilities(F)
-global F_X N_choice NP choice_names I_BETA_FX;
+function [V_utility]  = Utilities(F,logsum_mu)
+global F_X N_choice NP choice_names I_BETA_FX logsum_col;
 % Calculate the utilites for the different choices.
 % input: F is a vector of parameters (1*N_FX)
 % output: V_utility is a utility matrix (N_obs*N_choice)
@@ -475,9 +360,9 @@ V_utility=zeros(NP,N_choice);
 for i=1:N_choice
     if isempty(F_X.(choice_names{i}))==1
         F_X.(choice_names{i})=ones(NP,0);
-        V_utility(:,i)=F_X.(choice_names{i})*ones(0,1);
+        V_utility(:,i)=F_X.(choice_names{i})*ones(0,1)+logsum_mu.*logsum_col.(choice_names{i});
     else
-        V_utility(:,i)=F_X.(choice_names{i})*F(I_BETA_FX.(choice_names{i}));
+        V_utility(:,i)=F_X.(choice_names{i})*F(I_BETA_FX.(choice_names{i}))+logsum_mu.*logsum_col.(choice_names{i});
     end
     %               [log_sum_part,deri_log_sum_i]=logsum_eva(logsum_mu,logsum_col(:,i));
     

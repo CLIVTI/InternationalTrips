@@ -123,14 +123,14 @@ X_names_fix={};
 beta_names_fix.(choice_name{1})={'NoTrip_lowIncome'};   % ICEV
 X_names_fix.(choice_name{1})={'lowIncome'};    % ICEV
 
-beta_names_fix.(choice_name{2})={'0Natt_ASC','0Natt_incomeMissing','0Natt_Logsum'};   % ICEV
-X_names_fix.(choice_name{2})={'ASC','incomeMissing','logsumBortavaro_1'};    % ICEV
+beta_names_fix.(choice_name{2})={'0Natt_ASC','0Natt_incomeMissing','0Natt_Logsum'};  
+X_names_fix.(choice_name{2})={'ASC','incomeMissing','logsumBortavaro_1'};   
 
-beta_names_fix.(choice_name{3})={'1_5Natt_ASC','1_5Natt_age_17','1_5Natt_highIncome','1_5Natt_incomeMissing','1_5Natt_summer','1_5Natt_Jul','1_5Natt_AntalSmallBarn','1_5Natt_AntalStoreBarn'};   % ICEV
-X_names_fix.(choice_name{3})={'ASC','age_17','highIncome','incomeMissing','summer','Jul','AntalSmallBarn','AntalStoreBarn'};    % ICEV
-
-beta_names_fix.(choice_name{4})={'6+Natt_ASC','6+Natt_female','6+Natt_age_64','6+Natt_incomeMissing','6+Natt_summer','6+Natt_Jul','6+Natt_AntalSmallBarn','6+Natt_AntalStoreBarn','6+Natt_Logsum'};   % ICEV
-X_names_fix.(choice_name{4})={'ASC','female','age_64','incomeMissing','summer','Jul','AntalSmallBarn','AntalStoreBarn','logsumBortavaro_3'};    % ICEV
-
+beta_names_fix.(choice_name{3})={'1_5Natt_ASC','1_5Natt_age_17','1_5Natt_highIncome','1_5Natt_incomeMissing','1_5Natt_summer','1_5Natt_Jul','1_5Natt_AntalSmallBarn','1_5Natt_AntalStoreBarn'};  
+% X_names_fix.(choice_name{3})={'ASC','age_17','highIncome','incomeMissing','AntalSmallBarn','AntalStoreBarn'};    
+X_names_fix.(choice_name{3})={'ASC','age_17','highIncome','incomeMissing','summer','Jul','AntalSmallBarn','AntalStoreBarn'};    
+beta_names_fix.(choice_name{4})={'6+Natt_ASC','6+Natt_female','6+Natt_age_64','6+Natt_incomeMissing','6+Natt_summer','6+Natt_Jul','6+Natt_AntalSmallBarn','6+Natt_AntalStoreBarn','6+Natt_Logsum'};   
+% X_names_fix.(choice_name{4})={'ASC','female','age_64','incomeMissing','AntalSmallBarn','AntalStoreBarn','logsumBortavaro_3'};   
+X_names_fix.(choice_name{4})={'ASC','female','age_64','incomeMissing','summer','Jul','AntalSmallBarn','AntalStoreBarn','logsumBortavaro_3'}; 
 
 output=MNL_model(RVUEstimation,beta_names_fix,X_names_fix,Y_names,choice_name,RVUEstimation,1);

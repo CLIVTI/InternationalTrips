@@ -1,6 +1,7 @@
 
 %-------------------------------------------------------
-function output=NL_model_joint_estimation_log_zonal_flexible(Dataset,...
+function output=Apply_NL_model(modelResult,...
+    Dataset,...
     DatasetPrediction,...
     model_specification_modeChoice,...
     ZoneData,...
@@ -423,7 +424,8 @@ for i=1:length(firstLevel_choiceName)
 end
 
 %%estimate the joint destination model
-destinationChoice_modelResult=conditional_logit_model_destination_choice_log_zonal_joint(Observation_index_ALL,DestinationCHOICE_All,choiceSetIndex,zonal_matrix_All,los_matrix_All,beta_indexing_structure,predictionData,predictionData_prediction);
+destinationBeta=modelResult.unorganized_beta.destinationChoice;
+destinationChoice_modelResult=apply_conditional_logit_model(destinationBeta,Observation_index_ALL,DestinationCHOICE_All,choiceSetIndex,zonal_matrix_All,los_matrix_All,beta_indexing_structure,predictionData,predictionData_prediction);
 %
 
 
@@ -457,105 +459,10 @@ Dataset_ModeChoice=Dataset_temp(logical(validModeChoice),:);
 
 
 %%
-MC_overall=MNL_model_logsum(Dataset_ModeChoice,beta_names_ModeChoice,X_names_ModeChoice,Y_names_ModeChoice,choice_name_ModeChoice,logsum_var_ModeChoice,Dataset_temp_prediction,1);
+modeChoiceBeta=modelResult.unorganized_beta.modeChoice;
+output=apply_MNL_model_logsum(modeChoiceBeta,Dataset_ModeChoice,beta_names_ModeChoice,X_names_ModeChoice,Y_names_ModeChoice,choice_name_ModeChoice,logsum_var_ModeChoice,Dataset_temp_prediction,1);
 
 
-%%%%%%%%%%%%%%%%%start here do the specific variables for the accessMode part
-% specific variables
-% [CHOICEIDX_modeChoice, F_X_modeChoice, LAB_FX_modeChoice, I_BETA_FX_modeChoice, FX_alt_modeChoice]=SpecifyVariables_MNL(Dataset_temp,model_specification_modeChoice,Dataset_temp);
-%%%%%%%%% continue here!!!!!!!!!!!!!!!!!!!!!!!
-
-% save the parameter
-ModeChoice_beta=MC_overall.beta;
-ModeChoice_beta_tvalue=MC_overall.beta_tvalue;
-ModeChoice_beta_names=MC_overall.beta_names;
-for i=1:length(firstLevel_choiceName)
-    logsum_col=logsum_all.(firstLevel_choiceName{i});
-    Dataset_ModeChoice.(strcat('logsum_',firstLevel_choiceName{i}))=logsum_col(logical(validModeChoice));
-end
-
-%%
-
-% Initial parameter values
-% 1st variables from destination choice
-unorganized_beta={};
-unorganized_beta_names={};
-unorganized_beta.('destinationChoice')=destinationChoice_modelResult.beta;
-% beta_start_fx=destinationChoice_modelResult.beta;
-% beta_start_tvalue=destinationChoice_modelResult.beta_tvalue;
-unorganized_beta_names.('destinationChoice')=destinationChoice_modelResult.beta_name;
-% beta_names=destinationChoice_modelResult.beta_name;
-N_destination_beta=length(destinationChoice_modelResult.beta);
-
-% 2nd: variables from PTaccessMode nest
-N_ModeChoice_beta=length(ModeChoice_beta);
-unorganized_beta.('modeChoice')=ModeChoice_beta;
-% beta_start_fx=[beta_start_fx;ModeChoice_beta];
-% beta_start_tvalue=[beta_start_tvalue;ModeChoice_beta_tvalue];
-
-% for k=1:length(ModeChoice_beta_names)
-%     beta_names=[beta_names;strcat('ModeChoicePart_',ModeChoice_beta_names{k})];
-% end
-unorganized_beta_names.('modeChoice')=ModeChoice_beta_names;
-
-
-beta_start_structure={};
-tvalue_start_structure={};
-betaName_start_structure={};
-beta_start_structure.('destinationChoice')=destinationChoice_modelResult.organized_beta;
-tvalue_start_structure.('destinationChoice')=destinationChoice_modelResult.organized_beta_tvalue;
-betaName_start_structure.('destinationChoice')=destinationChoice_modelResult.organized_beta_name;
-
-beta_start_structure.('modeChoice')=MC_overall.organized_beta;  % note that the last element in beta_structure.('mode_choice') is logsum variable
-tvalue_start_structure.('modeChoice')=MC_overall.organized_beta_tvalue;
-betaName_start_structure.('modeChoice')=MC_overall.organized_beta_names;
-beta_start_structure.('modeChoicemu')=MC_overall.mu;
-tvalue_start_structure.('modeChoicemu')=MC_overall.mu_t_value;
-
-output_sequential={};
-output_sequential.('beta')=beta_start_structure;
-output_sequential.('tvalue')=tvalue_start_structure;
-output_sequential.('beta_name')=betaName_start_structure;
-output_sequential.('unorganized_beta')=unorganized_beta;
-output_sequential.('unorganized_betaNames')=unorganized_beta_names;
-% Beta_belong is used to estimate which beta belongs to which part
-% it is a 1*N_beta vector:
-% 1 denotes beta for destination choice
-% 2 denotes beta for acessBeta
-% 3 denotes beta for mode choice
-% Beta_belong=ones(1,length(beta_start_fx));
-% Beta_belong(N_destination_beta+1:N_destination_beta+N_ModeChoice_beta)=2;
-
-
-fprintf('\n\n----------------- DISPLAY RESULTS ---------------------')
-
-fprintf('\nnumber of observations: %10.0f', size(Dataset_ModeChoice,1));
-fprintf('\nnumber of variables: %10.0f', length(unorganized_beta.('destinationChoice'))+length(unorganized_beta.('modeChoice')));
-
-LL_B_start = destinationChoice_modelResult.model_fit.Loglikelihood_final+MC_overall.model_fit.Loglikelihood_final;
-fprintf('\nLog-likelihood final: %10.3f', LL_B_start)
-
-% 3: (change the value if needed in calculating the null loglikelihood LL_0)
-LL_0=destinationChoice_modelResult.model_fit.Loglikelihood_zero+MC_overall.model_fit.Loglikelihood_zero;
-fprintf('\nLog-likelihood for zero beta: %10.3f', LL_0);
-
-% 4: Goodness-of-fit
-fprintf('\nMcFadden rho: %5.3f', 1-LL_B_start/LL_0);
-
-% 5: adjusted Goodness-of-fit
-fprintf('\nAdjusted McFadden rho: %5.3f', 1-(LL_B_start-(length(unorganized_beta.('destinationChoice'))+length(unorganized_beta.('modeChoice'))))/LL_0);
-
-
-
-% output the model fit
-model_fit_info={};
-model_fit_info.('Loglikelihood_final')=-LL_B_start;
-model_fit_info.('Loglikelihood_zero')=-LL_0;
-model_fit_info.('adjusted_McFadden_rho')=1-(-LL_B_start-(length(unorganized_beta.('destinationChoice'))+length(unorganized_beta.('modeChoice'))))/(-LL_0);
-output_sequential.('model_fit')=model_fit_info;
-output_sequential.('logsum')=MC_overall.logsum_fullData;
-
-output=output_sequential;
 
 end
 

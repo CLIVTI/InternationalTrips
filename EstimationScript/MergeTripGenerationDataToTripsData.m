@@ -6,7 +6,7 @@ PathStorage='C:/Users/ChengxiL/VTI/Internationella resor - General/Estimation';
 addpath(genpath(PathStorage))
 
 % combine dataset for trip generation estimation done.
-RVUFilePath='//vti.se/root/Internationella-resor/R skript/RVU/R/LVDREstimation.csv';
+RVUFilePath='//vti.se/root/Internationella-resor/R skript/RVU/R/LVDREstimation_Business.csv'; %change to LVDREstimation.csv if this is for estimation of private trips. 
 UPBDDataPath='//vti.se/root/Internationella-resor/R skript/RVU/R/UPBDEstimation.csv';
 MDHRFilePath='//vti.se/root/Internationella-resor/R skript/RVU/R/MDHRForDataJoin.csv';
 LVHRDataPath='//vti.se/root/Internationella-resor/R skript/RVU/R/LVDRForDataJoin.csv';
@@ -26,7 +26,6 @@ MDHR.UENR=str2double(MDHR.UENR);
 opts = detectImportOptions(LVHRDataPath);
 LVHR=readtable(LVHRDataPath,opts);
 LVHR.UENR=str2double(LVHR.UENR);
-
 RVU_TripGeneration=RVU;
 
 for i=1:size(UPBD,1)
@@ -44,10 +43,13 @@ for i=1:size(UPBD,1)
         structNewRow(1,1).D_A_TransCadID= UPBD.D_A_TransCadID(i);
         structNewRow(1,1).D_B_TransCadID_EU=-100;
         structNewRow(1,1).D_B_TransCadID_World=-100;
-        structNewRow(1,1).sallskap=-1;
+        structNewRow(1,1).sallskap=partiSizeModel(RVU.sallskap(RVU.HHSTORL==UPBD.HHSTORL(i)));
+        structNewRow(1,1).HHSTORL=UPBD.HHSTORL(i);
         structNewRow(1,1).SEX = UPBD.SEX(i);
         structNewRow(1,1).AGE = UPBD.AGE(i);
         structNewRow(1,1).HHINK = UPBD.HHINK(i);
+        structNewRow(1,1).INKPLUSUP = UPBD.INKPLUSUP(i);
+        structNewRow(1,1).INKUP = UPBD.INKUP(i);
         structNewRow(1,1).HHTYP = UPBD.HHTYP(i);
         structNewRow(1,1).H_BARNN=-1;
         structNewRow(1,1).KKORT_HH=-1;
@@ -77,6 +79,6 @@ for i=1:size(UPBD,1)
         fprintf('\n UENR already exists in TripGeneration data: %10.0f ', UPBD.UENR(i));
     end
 end
-
-writetable(RVU_TripGeneration,'//vti.se/root/Internationella-resor/R skript/RVU/R/DataForTripGenerationEstimation.csv')
-      
+RVU_TripGeneration(:,1)=[];
+writetable(RVU_TripGeneration,'//vti.se/root/Internationella-resor/R skript/RVU/R/DataForTripGenerationEstimation_Business.csv')
+% writetable(RVU_TripGeneration,'//vti.se/root/Internationella-resor/R skript/RVU/R/DataForTripGenerationEstimation.csv')      

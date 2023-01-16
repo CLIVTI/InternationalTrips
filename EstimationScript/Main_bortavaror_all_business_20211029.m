@@ -27,7 +27,7 @@ addpath(genpath(PathStorage))
 % land use:
 landUseFilePath='ZonesImputed.csv';
 % RVU data:
-RVUFilePath='//vti.se/root/Internationella-resor/R skript/RVU/R/LVDREstimation_reseGenerering.csv';
+RVUFilePath='//vti.se/root/Internationella-resor/R skript/RVU/R/DataForTripGenerationEstimation_Business.csv';
 
 % level-of-service variables
 % car
@@ -37,13 +37,15 @@ CarDistancePath='LOS/Car/CarDistanceKM.xlsx';
 BusTimeFilePath='LOS/Bus/TravelTime.xlsx';
 BusDistancePath='LOS/Bus/TravelDistanceKM.xlsx';
 % Train
-TrainImpedanceFilePath='LOS/Train/EMMEWeights/Impedans.xlsx';
-TrainInVehicleTimePath='LOS/Train/EMMEWeights/InVehicleTime.xlsx';
-TrainFirstWaitTimePath='LOS/Train/EMMEWeights/FirstWaitTime.xlsx';
-TrainAccessTimePath='LOS/Train/EMMEWeights/AccessTime.xlsx';
-TrainEgressTimePath='LOS/Train/EMMEWeights/EgressTime.xlsx';
-TrainDistancePath='LOS/Train/EMMEWeights/InVehDistance.xlsx';
-TrainNtransferPath='LOS/Train/EMMEWeights/NTransfer.xlsx';
+TrainImpedanceFilePath='LOS/Train/EMMEWeights/WithHeterogenuousTransferPenaltyOutsideSweden/Impedans.xlsx';
+TrainInVehicleTimePath='LOS/Train/EMMEWeights/WithHeterogenuousTransferPenaltyOutsideSweden/InVehicleTime.xlsx';
+TrainFirstWaitTimePath='LOS/Train/EMMEWeights/WithHeterogenuousTransferPenaltyOutsideSweden/FirstWaitTime.xlsx';
+TrainAccessTimePath='LOS/Train/EMMEWeights/WithHeterogenuousTransferPenaltyOutsideSweden/AccessTime.xlsx';
+TrainEgressTimePath='LOS/Train/EMMEWeights/WithHeterogenuousTransferPenaltyOutsideSweden/EgressTime.xlsx';
+TrainDistancePath='LOS/Train/EMMEWeights/WithHeterogenuousTransferPenaltyOutsideSweden/InVehDistance.xlsx';
+TrainNtransferPath='LOS/Train/EMMEWeights/WithHeterogenuousTransferPenaltyOutsideSweden/NTransfer.xlsx';
+TrainTransferWaitTimeInSwedenPath='LOS/Train/EMMEWeights/WithHeterogenuousTransferPenaltyOutsideSweden/TransferWaitTimeWithinSweden.xlsx';
+TrainTransferWaitTimeOutSwedenPath='LOS/Train/EMMEWeights/WithHeterogenuousTransferPenaltyOutsideSweden/TransferWaitTimeOutsideSweden.xlsx';
 
 % Flight
 AirInVehicleTimePath='LOS/Air/EMMEWeights/InVehicleTime.xlsx';
@@ -51,16 +53,16 @@ AirAccessEgressTimePath='LOS/Air/EMMEWeights/AccessEgressTime.xlsx';
 AirCostPath='LOS/Air/EMMEWeights/TicketPrice.xlsx';
 AirTransferPath='LOS/Air/EMMEWeights/NumberofFlights.xlsx';
 
-% Ferry
-FerryInVehicleTimeFilePath='LOS/Ferry/EMMEWeights/InVehicleTime.xlsx';
-FerryHeadwayPath='LOS/Ferry/EMMEWeights/Headway.xlsx';
-FerryAccessEgressTimePath='LOS/Ferry/EMMEWeights/AccessEgressTime.xlsx';
-FerryCostPath='LOS/Ferry/EMMEWeights/TravelCost.xlsx';
-FerryDistancePath='LOS/Ferry/EMMEWeights/TravelDistanceKM_Ferry.xlsx';
-DistancePath='LOS/Ferry/EMMEWeights/TravelDistanceKM.xlsx';
-FerryNumberLineUsedPath='LOS/Ferry/EMMEWeights/NumberOfFerryLinesUsed.xlsx';
+% % Ferry
+% FerryInVehicleTimeFilePath='LOS/Ferry/EMMEWeights/InVehicleTime.xlsx';
+% FerryHeadwayPath='LOS/Ferry/EMMEWeights/Headway.xlsx';
+% FerryAccessEgressTimePath='LOS/Ferry/EMMEWeights/AccessEgressTime.xlsx';
+% FerryCostPath='LOS/Ferry/EMMEWeights/TravelCost.xlsx';
+% FerryDistancePath='LOS/Ferry/EMMEWeights/TravelDistanceKM_Ferry.xlsx';
+% DistancePath='LOS/Ferry/EMMEWeights/TravelDistanceKM.xlsx';
+% FerryNumberLineUsedPath='LOS/Ferry/EMMEWeights/NumberOfFerryLinesUsed.xlsx';
 %% model specifications
-mode_choice_names={'car','bus','train','air','ferry'};
+mode_choice_names={'car','bus','train','air'}; % 'car','bus','train','air','ferry'
 ModeChoice_varname='Mode';
 Origin_varname='D_A_TransCadID';
 Destination_varname='D_B_TransCadID';
@@ -76,6 +78,7 @@ RVU.D_B_TransCadID(RVU.D_B_TransCadID==-1)=RVU.D_B_TransCadID_World(RVU.D_B_Tran
 % recode some RVU variables
 %party size
 RVU.sallskap(isnan(RVU.sallskap))=1;
+RVU.sallskap(RVU.TripID==-1)=0.7776;  %%% remove this line if we are using household size to estimate partySize
 RVU.sallskap(RVU.sallskap>5)=5;  % if its >5 then probabilty the party cant be fitted in a car, just assuming 5 as maximum.
 RVU.PartySizeFactor=1./(1+RVU.sallskap);
 
@@ -83,9 +86,10 @@ RVU.PartySizeFactor=1./(1+RVU.sallskap);
 RVU.BILANT(isnan(RVU.BILANT))=0;
 
 % income
-RVU.lowMediumIncome=RVU.HHINK<500000;
-RVU.highIncome=RVU.HHINK>=500000;
-RVU.incomeMissing=isnan(RVU.HHINK);
+RVU.lowMediumIncome=RVU.INKUP<300000;
+RVU.highIncome=RVU.INKUP>=300000;
+RVU.incomeMissing=isnan(RVU.INKUP);
+RVU.INKPLUSUP=[]; % dont use INKPLUSUP, too many missing values
 % age
 RVU.age17=RVU.AGE<18;
 RVU.age1830=RVU.AGE>=18 & RVU.AGE<=30;
@@ -113,7 +117,7 @@ RVU.VILLA=RVU.VILLA==1;
 RVU.D_B_TransCadID(RVU.D_B_TransCadID==198)=209;
 
 
-RVU_bortavaror=RVU(RVU.bortavaro==2 | RVU.bortavaro==3,:);
+RVU_bortavaror=RVU(RVU.bortavaro>0 & RVU.Mode<=4,:);
 %% read land use data
 opts = detectImportOptions(landUseFilePath);
 ZoneData=readtable(landUseFilePath,opts);
@@ -124,16 +128,17 @@ ZoneData=sortrows(ZoneData,'TransCadID');  % important here, you must sort rows 
 landUseZoneID=ZoneData.TransCadID;
 ZoneData.Hotel_beds(ZoneData.Hotel_beds==0)=1000;
 ZoneData.Hotel_beds_per_area=ZoneData.Hotel_beds./1000;
-ZoneData.Population_per_area=ZoneData.Population/1000000000;
+ZoneData.Population_per_area=ZoneData.Population/10000000;
 ZoneData.Employment_per_area=ZoneData.Employment/100000;
 ZoneData.GDP_CAP_per_area=ZoneData.GDP_CAP/1000000000;
+ZoneData.hotel_per_population=ZoneData.Hotel_beds./ZoneData.Population*100;
 %% specify land use data
 % car
 zonal_data_car=[];
 % zonal_data_car.betaNames={'LU_Population','LU_Employment','LU_GDP_CAP','LU_Hotel_beds'};
 % zonal_data_car.XNames={'Population','Employment','GDP_CAP','Hotel_beds'};
-zonal_data_car.betaNames={'LU_Hotel_beds'};
-zonal_data_car.XNames={'Hotel_beds_per_area'};
+zonal_data_car.betaNames={'LU_Employment'};
+zonal_data_car.XNames={'Employment_per_area'}; % Employment_per_area
 
 % bus
 zonal_data_bus=[];
@@ -151,10 +156,10 @@ zonal_data_air=[];
 zonal_data_air.betaNames=zonal_data_car.betaNames;
 zonal_data_air.XNames=zonal_data_car.XNames;
 
-% ferry
-zonal_data_ferry=[];
-zonal_data_ferry.betaNames=zonal_data_car.betaNames;
-zonal_data_ferry.XNames=zonal_data_car.XNames;
+% % ferry
+% zonal_data_ferry=[];
+% zonal_data_ferry.betaNames=zonal_data_car.betaNames;
+% zonal_data_ferry.XNames=zonal_data_car.XNames;
 
 
 
@@ -163,12 +168,13 @@ zonal_varNames.(mode_choice_names{1})=zonal_data_car;
 zonal_varNames.(mode_choice_names{2})=zonal_data_bus;
 zonal_varNames.(mode_choice_names{3})=zonal_data_train;
 zonal_varNames.(mode_choice_names{4})=zonal_data_air;
-zonal_varNames.(mode_choice_names{5})=zonal_data_ferry;
+% zonal_varNames.(mode_choice_names{5})=zonal_data_ferry;
 
 
 %% read the level-of-service variables
 DestinationZoneIDs=ZoneData.TransCadID;
 SemesterZone=ZoneData.SemesterZone;
+HotelPopulation=ZoneData.hotel_per_population;
 FerryZone=ZoneData.FerryDummy;
 GDP_CAP=ZoneData.GDP_CAP/100000;
 % car time and cost
@@ -187,20 +193,25 @@ carCostLog(2:end,2:end)=log(carCost(2:end,2:end)+0.01);
 carDestinationZoneIDs=carTime(1,2:end);
 SemesterZonesDummy=zeros(1,length(carDestinationZoneIDs));
 GDPPerCapita=zeros(1,length(carDestinationZoneIDs));
+hotel_per_population=zeros(1,length(carDestinationZoneIDs));
 for i=1:length(carDestinationZoneIDs)
     SemesterZonesDummy(i)=SemesterZone(DestinationZoneIDs==carDestinationZoneIDs(i));
     GDPPerCapita(i)=GDP_CAP(DestinationZoneIDs==carDestinationZoneIDs(i));
+    hotel_per_population(i)=HotelPopulation(DestinationZoneIDs==carDestinationZoneIDs(i));
 end
 SemesterZonesMatrixCar=carTime;
 SemesterZonesMatrixCar(2:end,2:end)=SemesterZonesDummy(ones(size(carTime,1)-1,1),:);
 GDPPerCapitaMatrixCar=carTime;
 GDPPerCapitaMatrixCar(2:end,2:end)=GDPPerCapita(ones(size(carTime,1)-1,1),:);
+HotelPopulationMatrixCar=carTime;
+HotelPopulationMatrixCar(2:end,2:end)=hotel_per_population(ones(size(carTime,1)-1,1),:);
 
 for i=1:(size(carDistance,1)-1)
     noUsedIndex=carDistance(i+1,:)<100;
     noUsedIndex(1)=0;
     SemesterZonesMatrixCar(i+1,noUsedIndex)=nan;
     GDPPerCapitaMatrixCar(i+1,noUsedIndex)=nan;
+    HotelPopulationMatrixCar(i+1,noUsedIndex)=nan;
     carTime(i+1,noUsedIndex)=nan;
     carTimeLog(i+1,noUsedIndex)=nan;
     carCost(i+1,noUsedIndex)=nan;
@@ -223,20 +234,25 @@ busCostLog(2:end,2:end)=log(busCost(2:end,2:end)+0.01);
 busDestinationZoneIDs=busTime(1,2:end);
 SemesterZonesDummy=zeros(1,length(busDestinationZoneIDs));
 GDPPerCapita=zeros(1,length(busDestinationZoneIDs));
+hotel_per_population=zeros(1,length(busDestinationZoneIDs));
 for i=1:length(busDestinationZoneIDs)
     SemesterZonesDummy(i)=SemesterZone(DestinationZoneIDs==busDestinationZoneIDs(i));
     GDPPerCapita(i)=GDP_CAP(DestinationZoneIDs==busDestinationZoneIDs(i));
+    hotel_per_population(i)=HotelPopulation(DestinationZoneIDs==busDestinationZoneIDs(i));
 end
 SemesterZonesMatrixBus=busTime;
 SemesterZonesMatrixBus(2:end,2:end)=SemesterZonesDummy(ones(size(busTime,1)-1,1),:);
 GDPPerCapitaMatrixBus=busTime;
 GDPPerCapitaMatrixBus(2:end,2:end)=GDPPerCapita(ones(size(busTime,1)-1,1),:);
+HotelPopulationMatrixBus=busTime;
+HotelPopulationMatrixBus(2:end,2:end)=hotel_per_population(ones(size(busTime,1)-1,1),:);
 
 for i=1:(size(busDistance,1)-1)
     noUsedIndex=busDistance(i+1,:)<100;
     noUsedIndex(1)=0;
     SemesterZonesMatrixBus(i+1,noUsedIndex)=nan;
     GDPPerCapitaMatrixBus(i+1,noUsedIndex)=nan;
+    HotelPopulationMatrixBus(i+1,noUsedIndex)=nan;
     busTime(i+1,noUsedIndex)=nan;
     busTimeLog(i+1,noUsedIndex)=nan;
     busCost(i+1,noUsedIndex)=nan;
@@ -254,6 +270,8 @@ end
 
 TrainInVehicleTime= xlsread(TrainInVehicleTimePath) ;
 TrainFirstWaitTime=xlsread(TrainFirstWaitTimePath) ;
+TrainTransferWaitTimeInSweden=xlsread(TrainTransferWaitTimeInSwedenPath);
+TrainTransferWaitTimeOutSweden=xlsread(TrainTransferWaitTimeOutSwedenPath);
 TrainAccessTime=xlsread(TrainAccessTimePath) ;
 TrainEgressTime=xlsread(TrainEgressTimePath) ;
 TrainAccessEgressTime=TrainAccessTime;
@@ -269,14 +287,18 @@ trainCost(2:end,2:end)=trainDistance(2:end,2:end).*0.17553+(trainNTransfer(2:end
 trainDestinationZoneIDs=TrainInVehicleTime(1,2:end);
 SemesterZonesDummy=zeros(1,length(trainDestinationZoneIDs));
 GDPPerCapita=zeros(1,length(trainDestinationZoneIDs));
+hotel_per_population=zeros(1,length(trainDestinationZoneIDs));
 for i=1:length(trainDestinationZoneIDs)
     SemesterZonesDummy(i)=SemesterZone(DestinationZoneIDs==trainDestinationZoneIDs(i));
     GDPPerCapita(i)=GDP_CAP(DestinationZoneIDs==trainDestinationZoneIDs(i));
+    hotel_per_population(i)=HotelPopulation(DestinationZoneIDs==trainDestinationZoneIDs(i));
 end
 SemesterZonesMatrixTrain=TrainInVehicleTime;
 SemesterZonesMatrixTrain(2:end,2:end)=SemesterZonesDummy(ones(size(TrainInVehicleTime,1)-1,1),:);
 GDPPerCapitaMatrixTrain=TrainInVehicleTime;
 GDPPerCapitaMatrixTrain(2:end,2:end)=GDPPerCapita(ones(size(TrainInVehicleTime,1)-1,1),:);
+HotelPopulationMatrixTrain=TrainInVehicleTime;
+HotelPopulationMatrixTrain(2:end,2:end)=hotel_per_population(ones(size(TrainInVehicleTime,1)-1,1),:);
 
 
 for i=1:(size(trainDistance,1)-1)
@@ -284,8 +306,11 @@ for i=1:(size(trainDistance,1)-1)
     noUsedIndex(1)=0;
     SemesterZonesMatrixTrain(i+1,noUsedIndex)=nan;
     GDPPerCapitaMatrixTrain(i+1,noUsedIndex)=nan;
+    HotelPopulationMatrixTrain(i+1,noUsedIndex)=nan;
     TrainInVehicleTime(i+1,noUsedIndex)=nan;
     TrainFirstWaitTime(i+1,noUsedIndex)=nan;
+    TrainTransferWaitTimeInSweden(i+1,noUsedIndex)=nan;
+    TrainTransferWaitTimeOutSweden(i+1,noUsedIndex)=nan;
     TrainAccessEgressTime(i+1,noUsedIndex)=nan;
     trainNTransfer(i+1,noUsedIndex)=nan;
 end
@@ -312,15 +337,18 @@ airNTransfer = xlsread(AirTransferPath);
 airDestinationZoneIDs=AirInVehicleTime(1,2:end);
 SemesterZonesDummy=zeros(1,length(airDestinationZoneIDs));
 GDPPerCapita=zeros(1,length(airDestinationZoneIDs));
+hotel_per_population=zeros(1,length(airDestinationZoneIDs));
 for i=1:length(airDestinationZoneIDs)
     SemesterZonesDummy(i)=SemesterZone(DestinationZoneIDs==airDestinationZoneIDs(i));
     GDPPerCapita(i)=GDP_CAP(DestinationZoneIDs==airDestinationZoneIDs(i));
+    hotel_per_population(i)=HotelPopulation(DestinationZoneIDs==airDestinationZoneIDs(i));
 end
 SemesterZonesMatrixAir=AirInVehicleTime;
 SemesterZonesMatrixAir(2:end,2:end)=SemesterZonesDummy(ones(size(AirInVehicleTime,1)-1,1),:);
 GDPPerCapitaMatrixAir=AirInVehicleTime;
 GDPPerCapitaMatrixAir(2:end,2:end)=GDPPerCapita(ones(size(AirInVehicleTime,1)-1,1),:);
-
+HotelPopulationMatrixAir=AirInVehicleTime;
+HotelPopulationMatrixAir(2:end,2:end)=hotel_per_population(ones(size(AirInVehicleTime,1)-1,1),:);
 
 
 for i=1:(size(airCost,1)-1)
@@ -329,6 +357,7 @@ for i=1:(size(airCost,1)-1)
     SemesterZonesMatrixAir(i+1,noUsedIndex)=nan;
     GDPPerCapitaMatrixAir(i+1,noUsedIndex)=nan;
     AirInVehicleTime(i+1,noUsedIndex)=nan;
+    HotelPopulationMatrixAir(i+1,noUsedIndex)=nan;
     airCost(i+1,noUsedIndex)=nan;
     AirAccessEgressTime(i+1,noUsedIndex)=nan;
     airNTransfer(i+1,noUsedIndex)=nan;
@@ -339,109 +368,109 @@ AirInVehicleTimeLog(2:end,2:end)=log(AirInVehicleTime(2:end,2:end)+0.01);
 airCostLog=airCost;
 airCostLog(2:end,2:end)=log(airCost(2:end,2:end)+0.01);
 
-% ferry
-% FerryInVehicleTimeFilePath='LOS/Ferry/InVehicleTime.xlsx';
-% FerryHeadwayPath='LOS/Ferry/Headway.xlsx';
-% FerryAccessEgressTimePath='LOS/Ferry/AccessEgressTime.xlsx';
-% FerryCostPath='LOS/Ferry/TravelCost.xlsx';
-% FerryDistancePath='LOS/Ferry/TravelDistanceKM_Ferry.xlsx';
-% DistancePath='LOS/Ferry/TravelDistanceKM.xlsx';
-% FerryNumberLineUsedPath='LOS/Ferry/NumberOfFerryLinesUsed.xlsx';
 
 
-
-FerryInVehicleTime = xlsread(FerryInVehicleTimeFilePath) ;
-FerryFirstWaitTime=xlsread(FerryHeadwayPath) ;
-FerryFirstWaitTime(2:end,2:end)=FerryFirstWaitTime(2:end,2:end)./2;
-FerryAccessEgressTime=xlsread(FerryAccessEgressTimePath) ;
-FerryTotalTime=FerryInVehicleTime;
-FerryTotalTime(2:end,2:end)=FerryInVehicleTime(2:end,2:end)+2.*FerryAccessEgressTime(2:end,2:end);
-ferryCost = xlsread(FerryCostPath);  %% calculated as for car link, cost=0.18 euro/km, for ferry link, use the ferry line cost: car_HS_H
-FerryDistance = xlsread(FerryDistancePath);
-FerryDistanceFullTrip= xlsread(DistancePath);
-ferryNTransfer=xlsread(FerryNumberLineUsedPath);
-
-
-% create destinatoion zone dymmy
-ferryDestinationZoneIDs=FerryInVehicleTime(1,2:end);
-SemesterZonesDummy=zeros(1,length(ferryDestinationZoneIDs));
-GDPPerCapita=zeros(1,length(ferryDestinationZoneIDs));
-FerryDestination=zeros(1,length(ferryDestinationZoneIDs));
-for i=1:length(ferryDestinationZoneIDs)
-    SemesterZonesDummy(i)=SemesterZone(DestinationZoneIDs==ferryDestinationZoneIDs(i));
-    GDPPerCapita(i)=GDP_CAP(DestinationZoneIDs==ferryDestinationZoneIDs(i));
-    FerryDestination(i)=FerryZone(DestinationZoneIDs==ferryDestinationZoneIDs(i));
-end
-SemesterZonesMatrixFerry=FerryInVehicleTime;
-SemesterZonesMatrixFerry(2:end,2:end)=SemesterZonesDummy(ones(size(FerryInVehicleTime,1)-1,1),:);
-GDPPerCapitaMatrixFerry=FerryInVehicleTime;
-GDPPerCapitaMatrixFerry(2:end,2:end)=GDPPerCapita(ones(size(FerryInVehicleTime,1)-1,1),:);
-FerryDestinationFerry=FerryInVehicleTime;
-FerryDestinationFerry(2:end,2:end)=FerryDestination(ones(size(FerryInVehicleTime,1)-1,1),:);
-% we assume that if there is no ferry line used, the destination is not available, code as nan.
-for i=1:(size(ferryNTransfer,1)-1)
-    % noUsedIndex=ferryNTransfer(i+1,:)==0 | FerryDistanceFullTrip(i+1,:)<100 | FerryDistance(i+1,:)./FerryDistanceFullTrip(i+1,:)<0.5;
-    noUsedIndex=ferryNTransfer(i+1,:)==0 | FerryDistanceFullTrip(i+1,:)<100 | FerryDistance(i+1,:)./FerryDistanceFullTrip(i+1,:)<0.5;
-    noUsedIndex(1)=0;
-    SemesterZonesMatrixFerry(i+1,noUsedIndex)=nan;
-    GDPPerCapitaMatrixFerry(i+1,noUsedIndex)=nan;
-    FerryDestinationFerry(i+1,noUsedIndex)=nan;
-    FerryInVehicleTime(i+1,noUsedIndex)=nan;
-    ferryCost(i+1,noUsedIndex)=nan;
-    FerryFirstWaitTime(i+1,noUsedIndex)=nan;
-    FerryAccessEgressTime(i+1,noUsedIndex)=nan;
-    ferryNTransfer(i+1,noUsedIndex)=nan;
-    FerryTotalTime(i+1,noUsedIndex)=nan;
-end
-ferryNTransfer(2:end,2:end)=ferryNTransfer(2:end,2:end)-1;
-FerryInVehicleTimeLog=FerryInVehicleTime;
-FerryInVehicleTimeLog(2:end,2:end)=log(FerryInVehicleTime(2:end,2:end));
-ferryCostLog=ferryCost;
-ferryCostLog(2:end,2:end)=log(ferryCost(2:end,2:end)+0.01);
+% % ferry
+% 
+% FerryInVehicleTime = xlsread(FerryInVehicleTimeFilePath) ;
+% FerryFirstWaitTime=xlsread(FerryHeadwayPath) ;
+% FerryFirstWaitTime(2:end,2:end)=FerryFirstWaitTime(2:end,2:end)./2;
+% FerryAccessEgressTime=xlsread(FerryAccessEgressTimePath) ;
+% FerryTotalTime=FerryInVehicleTime;
+% FerryTotalTime(2:end,2:end)=FerryInVehicleTime(2:end,2:end)+2.*FerryAccessEgressTime(2:end,2:end);
+% ferryCost = xlsread(FerryCostPath);  %% calculated as for car link, cost=0.18 euro/km, for ferry link, use the ferry line cost: car_HS_H
+% FerryDistance = xlsread(FerryDistancePath);
+% FerryDistanceFullTrip= xlsread(DistancePath);
+% ferryNTransfer=xlsread(FerryNumberLineUsedPath);
+% 
+% 
+% % create destinatoion zone dymmy
+% ferryDestinationZoneIDs=FerryInVehicleTime(1,2:end);
+% SemesterZonesDummy=zeros(1,length(ferryDestinationZoneIDs));
+% GDPPerCapita=zeros(1,length(ferryDestinationZoneIDs));
+% hotel_per_population=zeros(1,length(ferryDestinationZoneIDs));
+% FerryDestination=zeros(1,length(ferryDestinationZoneIDs));
+% for i=1:length(ferryDestinationZoneIDs)
+%     SemesterZonesDummy(i)=SemesterZone(DestinationZoneIDs==ferryDestinationZoneIDs(i));
+%     GDPPerCapita(i)=GDP_CAP(DestinationZoneIDs==ferryDestinationZoneIDs(i));
+%     hotel_per_population(i)=HotelPopulation(DestinationZoneIDs==ferryDestinationZoneIDs(i));
+%     FerryDestination(i)=FerryZone(DestinationZoneIDs==ferryDestinationZoneIDs(i));
+% end
+% SemesterZonesMatrixFerry=FerryInVehicleTime;
+% SemesterZonesMatrixFerry(2:end,2:end)=SemesterZonesDummy(ones(size(FerryInVehicleTime,1)-1,1),:);
+% GDPPerCapitaMatrixFerry=FerryInVehicleTime;
+% GDPPerCapitaMatrixFerry(2:end,2:end)=GDPPerCapita(ones(size(FerryInVehicleTime,1)-1,1),:);
+% HotelPopulationMatrixFerry=FerryInVehicleTime;
+% HotelPopulationMatrixFerry(2:end,2:end)=hotel_per_population(ones(size(FerryInVehicleTime,1)-1,1),:);
+% FerryDestinationFerry=FerryInVehicleTime;
+% FerryDestinationFerry(2:end,2:end)=FerryDestination(ones(size(FerryInVehicleTime,1)-1,1),:);
+% % we assume that if there is no ferry line used, the destination is not available, code as nan.
+% for i=1:(size(ferryNTransfer,1)-1)
+%     % noUsedIndex=ferryNTransfer(i+1,:)==0 | FerryDistanceFullTrip(i+1,:)<100 | FerryDistance(i+1,:)./FerryDistanceFullTrip(i+1,:)<0.5;
+%     noUsedIndex=ferryNTransfer(i+1,:)==0 | FerryDistanceFullTrip(i+1,:)<100 | FerryDistance(i+1,:)./FerryDistanceFullTrip(i+1,:)<0.5;
+%     noUsedIndex(1)=0;
+%     SemesterZonesMatrixFerry(i+1,noUsedIndex)=nan;
+%     GDPPerCapitaMatrixFerry(i+1,noUsedIndex)=nan;
+%     HotelPopulationMatrixFerry(i+1,noUsedIndex)=nan;
+%     FerryDestinationFerry(i+1,noUsedIndex)=nan;
+%     FerryInVehicleTime(i+1,noUsedIndex)=nan;
+%     ferryCost(i+1,noUsedIndex)=nan;
+%     FerryFirstWaitTime(i+1,noUsedIndex)=nan;
+%     FerryAccessEgressTime(i+1,noUsedIndex)=nan;
+%     ferryNTransfer(i+1,noUsedIndex)=nan;
+%     FerryTotalTime(i+1,noUsedIndex)=nan;
+% end
+% ferryNTransfer(2:end,2:end)=ferryNTransfer(2:end,2:end)-1;
+% FerryInVehicleTimeLog=FerryInVehicleTime;
+% FerryInVehicleTimeLog(2:end,2:end)=log(FerryInVehicleTime(2:end,2:end));
+% ferryCostLog=ferryCost;
+% ferryCostLog(2:end,2:end)=log(ferryCost(2:end,2:end)+0.01);
 %% specify LOS variables
 % summarize to one structure as model input
 
 % car
 level_of_service_var_car=[];
-level_of_service_var_car.SemesterZone=SemesterZonesMatrixCar;
+% level_of_service_var_car.SemesterZone=SemesterZonesMatrixCar;
 level_of_service_var_car.GDPPerCapita=GDPPerCapitaMatrixCar;
+level_of_service_var_car.HotelPerPopulation=HotelPopulationMatrixCar;
 level_of_service_var_car.carTravelTime=carTime;
 % level_of_service_var_car.carLogTravelTime=carTimeLog;
-level_of_service_var_car.travelCost_lowMediumIncome=carCost;
-level_of_service_var_car.travelCost_highIncome=carCost;
+% level_of_service_var_car.travelCost_lowMediumIncome=carCost;
+% level_of_service_var_car.travelCost_highIncome=carCost;
 level_of_service_var_car.travelCost_incomeMissing=carCost;
-% level_of_service_var_car.travelCostLog_lowMediumIncome=carCostLog;
+level_of_service_var_car.travelCostLog_lowMediumIncome=carCostLog;
 level_of_service_var_car.travelCostLog_highIncome=carCostLog;
-level_of_service_var_car.travelCost_age17=carCost;
 
 % bus
 level_of_service_var_bus=[];
-level_of_service_var_bus.SemesterZone=SemesterZonesMatrixBus;
+% level_of_service_var_bus.SemesterZone=SemesterZonesMatrixBus;
 level_of_service_var_bus.GDPPerCapita=GDPPerCapitaMatrixBus;
+level_of_service_var_bus.HotelPerPopulation=HotelPopulationMatrixBus;
 level_of_service_var_bus.inVehicleTimeBusTrainAirFerry=busTime;
 % level_of_service_var_bus.logInVehicleTimeBusTrainAirFerry=busTimeLog;
-level_of_service_var_bus.travelCost_lowMediumIncome=busCost;
-level_of_service_var_bus.travelCost_highIncome=busCost;
+% level_of_service_var_bus.travelCost_lowMediumIncome=busCost;
+% level_of_service_var_bus.travelCost_highIncome=busCost;
 level_of_service_var_bus.travelCost_incomeMissing=busCost;
-% level_of_service_var_bus.travelCostLog_lowMediumIncome=busCostLog;
+level_of_service_var_bus.travelCostLog_lowMediumIncome=busCostLog;
 level_of_service_var_bus.travelCostLog_highIncome=busCostLog;
-level_of_service_var_bus.travelCost_age17=busCost;
 
 % train
 level_of_service_var_train=[];
-level_of_service_var_train.SemesterZone=SemesterZonesMatrixTrain;
+% level_of_service_var_train.SemesterZone=SemesterZonesMatrixTrain;
 level_of_service_var_train.GDPPerCapita=GDPPerCapitaMatrixTrain;
-level_of_service_var_train.accessEgressTimeTrain=TrainAccessEgressTime;
+level_of_service_var_train.HotelPerPopulation=HotelPopulationMatrixTrain;
+level_of_service_var_train.accessEgressTimeTrainFerry=TrainAccessEgressTime;
 % level_of_service_var_train.firstWaitTimeTrain=TrainFirstWaitTime;
-level_of_service_var_train.numberTransferTrain=trainNTransfer;
+% level_of_service_var_train.numberTransferTrain=trainNTransfer;
+% level_of_service_var_train.transferWaitTimeInSwedenTrain=TrainTransferWaitTimeInSweden;
+level_of_service_var_train.transferWaitTimeOutSwedenTrain=TrainTransferWaitTimeOutSweden;
 level_of_service_var_train.inVehicleTimeBusTrainAirFerry=TrainInVehicleTime;
 % level_of_service_var_train.logInVehicleTimeBusTrainAirFerry=TrainInVehicleTimeLog;
-level_of_service_var_train.travelCost_lowMediumIncome=trainCost;
-level_of_service_var_train.travelCost_highIncome=trainCost;
+% level_of_service_var_train.travelCost_lowMediumIncome=trainCost;
+% level_of_service_var_train.travelCost_highIncome=trainCost;
 level_of_service_var_train.travelCost_incomeMissing=trainCost;
-% level_of_service_var_train.travelCostLog_lowMediumIncome=trainCostLog;
+level_of_service_var_train.travelCostLog_lowMediumIncome=trainCostLog;
 level_of_service_var_train.travelCostLog_highIncome=trainCostLog;
-level_of_service_var_train.travelCost_age17=trainCostLog;
 
 % flight
 level_of_service_var_air=[];
@@ -466,38 +495,38 @@ level_of_service_var_air=[];
 % end
 % airTime_threshold1(:,1)=AirInVehicleTime(:,1);
 % airTime_threshold2(:,1)=AirInVehicleTime(:,1);
-level_of_service_var_air.SemesterZoneAir=SemesterZonesMatrixAir;
+% level_of_service_var_air.SemesterZoneAir=SemesterZonesMatrixAir;
 level_of_service_var_air.GDPPerCapitaAir=GDPPerCapitaMatrixAir;
-level_of_service_var_air.accessEgressTimeAirFerry=AirAccessEgressTime;
+% level_of_service_var_air.HotelPerPopulationAir=HotelPopulationMatrixAir;
+level_of_service_var_air.accessEgressTimeAir=AirAccessEgressTime;
 % level_of_service_var_air.numberTransferAir=airNTransfer;
 level_of_service_var_air.inVehicleTimeBusTrainAirFerry=AirInVehicleTime;
 % level_of_service_var_air.logInVehicleTimeBusTrainAirFerry=AirInVehicleTimeLog;
 
 
-level_of_service_var_air.travelCost_lowMediumIncome=airCost;
-level_of_service_var_air.travelCost_highIncome=airCost;
+% level_of_service_var_air.travelCost_lowMediumIncome=airCost;
+% level_of_service_var_air.travelCost_highIncome=airCost;
 level_of_service_var_air.travelCost_incomeMissing=airCost;
-% level_of_service_var_air.travelCostLog_lowMediumIncome=airCostLog;
+level_of_service_var_air.travelCostLog_lowMediumIncome=airCostLog;
 level_of_service_var_air.travelCostLog_highIncome=airCostLog;
-level_of_service_var_air.travelCost_age17=airCost;
 
-% ferry
-level_of_service_var_ferry=[];
-level_of_service_var_ferry.SemesterZone=SemesterZonesMatrixFerry;
-level_of_service_var_ferry.GDPPerCapita=GDPPerCapitaMatrixFerry;
-level_of_service_var_ferry.BalticSeaCoastDummy=FerryDestinationFerry;
-level_of_service_var_ferry.accessEgressTimeAirFerry=FerryAccessEgressTime;
-% level_of_service_var_ferry.firstWaitTimeTrainFerry=FerryFirstWaitTime;
-% level_of_service_var_ferry.numberTransferFerry=ferryNTransfer;
-level_of_service_var_ferry.inVehicleTimeBusTrainAirFerry=FerryInVehicleTime;
-% level_of_service_var_ferry.TotalTimeFerry=FerryTotalTime;
-% level_of_service_var_ferry.logInVehicleTimeBusTrainAirFerry=FerryInVehicleTimeLog;
-level_of_service_var_ferry.travelCost_lowMediumIncome=ferryCost;
-level_of_service_var_ferry.travelCost_highIncome=ferryCost;
-level_of_service_var_ferry.travelCost_incomeMissing=ferryCost;
+% % ferry
+% level_of_service_var_ferry=[];
+% % level_of_service_var_ferry.SemesterZone=SemesterZonesMatrixFerry;
+% level_of_service_var_ferry.GDPPerCapita=GDPPerCapitaMatrixFerry;
+% level_of_service_var_ferry.HotelPerPopulation=HotelPopulationMatrixFerry;
+% % level_of_service_var_ferry.BalticSeaCoastDummy=FerryDestinationFerry;
+% level_of_service_var_ferry.accessEgressTimeTrainFerry=FerryAccessEgressTime;
+% % level_of_service_var_ferry.firstWaitTimeTrainFerry=FerryFirstWaitTime;
+% % level_of_service_var_ferry.numberTransferFerry=ferryNTransfer;
+% level_of_service_var_ferry.inVehicleTimeBusTrainAirFerry=FerryInVehicleTime;
+% % level_of_service_var_ferry.TotalTimeFerry=FerryTotalTime;
+% % level_of_service_var_ferry.logInVehicleTimeBusTrainAirFerry=FerryInVehicleTimeLog;
+% % level_of_service_var_ferry.travelCost_lowMediumIncome=ferryCost;
+% % level_of_service_var_ferry.travelCost_highIncome=ferryCost;
+% level_of_service_var_ferry.travelCost_incomeMissing=ferryCost;
 % level_of_service_var_ferry.travelCostLog_lowMediumIncome=ferryCostLog;
-level_of_service_var_ferry.travelCostLog_highIncome=ferryCostLog;
-level_of_service_var_ferry.travelCost_age17=ferryCost;
+% level_of_service_var_ferry.travelCostLog_highIncome=ferryCostLog;
 
 
 level_of_service_var=[];
@@ -505,25 +534,25 @@ level_of_service_var.(mode_choice_names{1})=level_of_service_var_car;
 level_of_service_var.(mode_choice_names{2})=level_of_service_var_bus;
 level_of_service_var.(mode_choice_names{3})=level_of_service_var_train;
 level_of_service_var.(mode_choice_names{4})=level_of_service_var_air;
-level_of_service_var.(mode_choice_names{5})=level_of_service_var_ferry;
+% level_of_service_var.(mode_choice_names{5})=level_of_service_var_ferry;
 %% specify mode choice part
 
 % all variable names {'female','VILLA','age_64','age_18_30','age_17','BILANT'}
-beta_names_fix.(mode_choice_names{1})={'NcarInHH','bil_female'};   % walk
-X_names_fix.(mode_choice_names{1})={'BILANT','female'};  % walk
+beta_names_fix.(mode_choice_names{1})={'NcarInHH'};   % walk
+X_names_fix.(mode_choice_names{1})={'BILANT'};  % walk
 
 
-beta_names_fix.(mode_choice_names{2})={'bus_ASC','bus_age_64'};  
-X_names_fix.(mode_choice_names{2})={'ASC','age64'};  
+beta_names_fix.(mode_choice_names{2})={'bus_ASC'};  
+X_names_fix.(mode_choice_names{2})={'ASC'};  
 
 beta_names_fix.(mode_choice_names{3})={'train_ASC'};   
 X_names_fix.(mode_choice_names{3})={'ASC'};  
 
-beta_names_fix.(mode_choice_names{4})={'air_ASC','air_age_64'};  
-X_names_fix.(mode_choice_names{4})={'ASC','age64'};  
+beta_names_fix.(mode_choice_names{4})={'air_ASC'};  
+X_names_fix.(mode_choice_names{4})={'ASC'};  
 
-beta_names_fix.(mode_choice_names{5})={'ferry_ASC'};  
-X_names_fix.(mode_choice_names{5})={'ASC'};  
+% beta_names_fix.(mode_choice_names{5})={'ferry_ASC'};  
+% X_names_fix.(mode_choice_names{5})={'ASC'};  
 
 
 model_specification_modeChoice=[];
@@ -533,7 +562,7 @@ model_specification_modeChoice.Y_names=ModeChoice_varname;
 model_specification_modeChoice.choice_name=mode_choice_names;
 
 % 
-final_result_bortavaror_4=NL_model_joint_estimation_log_zonal_flexible(RVU_bortavaror,...
+final_result=NL_model_joint_estimation_log_zonal_flexible(RVU_bortavaror,...
                                                           RVU,...
                                                           model_specification_modeChoice,...
                                                           ZoneData,...
@@ -544,10 +573,10 @@ final_result_bortavaror_4=NL_model_joint_estimation_log_zonal_flexible(RVU_borta
                                                           Origin_varname,...
                                                           Destination_varname);
                                                       
-RVU.logsumBortavaro_2=final_result_bortavaror_4.logsum;
-writetable(RVU,'//vti.se/root/Internationella-resor/R skript/RVU/R/LVDREstimation_reseGenerering.csv')
+RVU.logsumBortavaro=final_result.logsum;
+writetable(RVU,'//vti.se/root/Internationella-resor/R skript/RVU/R/LVDREstimation_reseGenerering_business.csv')
 
-%  %% descriptive for air invehicle time
+%% descriptive for air invehicle time
 % ZoneData.valdDestination=zeros(size(ZoneData,1),1);
 % startZoneID=RVU_bortavaror.(Origin_varname);
 % endZoneID=RVU_bortavaror.(Destination_varname);

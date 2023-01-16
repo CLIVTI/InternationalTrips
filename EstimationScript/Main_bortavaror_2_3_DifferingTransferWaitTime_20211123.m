@@ -37,13 +37,15 @@ CarDistancePath='LOS/Car/CarDistanceKM.xlsx';
 BusTimeFilePath='LOS/Bus/TravelTime.xlsx';
 BusDistancePath='LOS/Bus/TravelDistanceKM.xlsx';
 % Train
-TrainImpedanceFilePath='LOS/Train/EMMEWeights/Impedans.xlsx';
-TrainInVehicleTimePath='LOS/Train/EMMEWeights/InVehicleTime.xlsx';
-TrainFirstWaitTimePath='LOS/Train/EMMEWeights/FirstWaitTime.xlsx';
-TrainAccessTimePath='LOS/Train/EMMEWeights/AccessTime.xlsx';
-TrainEgressTimePath='LOS/Train/EMMEWeights/EgressTime.xlsx';
-TrainDistancePath='LOS/Train/EMMEWeights/InVehDistance.xlsx';
-TrainNtransferPath='LOS/Train/EMMEWeights/NTransfer.xlsx';
+
+TrainInVehicleTimePath='LOS/Train/EMMEWeightsAndCarNetworkAsAccessEgress/InVehicleTime.xlsx';
+TrainFirstWaitTimePath='LOS/Train/EMMEWeightsAndCarNetworkAsAccessEgress/FirstWaitTime.xlsx';
+TrainAccessTimePath='LOS/Train/EMMEWeightsAndCarNetworkAsAccessEgress/AccessTime.xlsx';
+TrainEgressTimePath='LOS/Train/EMMEWeightsAndCarNetworkAsAccessEgress/EgressTime.xlsx';
+TrainDistancePath='LOS/Train/EMMEWeightsAndCarNetworkAsAccessEgress/InVehDistance.xlsx';
+TrainNtransferPath='LOS/Train/EMMEWeightsAndCarNetworkAsAccessEgress/NTransfer.xlsx';
+TrainTransferWaitTimeInSwedenPath='LOS/Train/EMMEWeightsAndCarNetworkAsAccessEgress/TransferWaitTimeWithinSweden.xlsx';
+TrainTransferWaitTimeOutSwedenPath='LOS/Train/EMMEWeightsAndCarNetworkAsAccessEgress/TransferWaitTimeOutsideSweden.xlsx';
 
 % Flight
 AirInVehicleTimePath='LOS/Air/EMMEWeights/InVehicleTime.xlsx';
@@ -254,6 +256,8 @@ end
 
 TrainInVehicleTime= xlsread(TrainInVehicleTimePath) ;
 TrainFirstWaitTime=xlsread(TrainFirstWaitTimePath) ;
+TrainTransferWaitTimeInSweden=xlsread(TrainTransferWaitTimeInSwedenPath);
+TrainTransferWaitTimeOutSweden=xlsread(TrainTransferWaitTimeOutSwedenPath);
 TrainAccessTime=xlsread(TrainAccessTimePath) ;
 TrainEgressTime=xlsread(TrainEgressTimePath) ;
 TrainAccessEgressTime=TrainAccessTime;
@@ -263,7 +267,12 @@ TrainTotalTime(2:end,2:end)=TrainInVehicleTime(2:end,2:end)+TrainFirstWaitTime(2
 trainDistance = xlsread(TrainDistancePath) ;
 trainCost=trainDistance;
 trainNTransfer=xlsread(TrainNtransferPath) ;
-trainCost(2:end,2:end)=trainDistance(2:end,2:end).*0.17553+(trainNTransfer(2:end,2:end)+1).*21.09441;
+% trainCost(2:end,2:end)=trainDistance(2:end,2:end).*0.17553+(1).*21.09441; % high
+% trainCost(2:end,2:end)=trainDistance(2:end,2:end).*0.06492+(1).*13.04077; % low
+% trainCost(2:end,2:end)=(trainDistance(2:end,2:end).*0.06492+(1).*13.04077+trainDistance(2:end,2:end).*0.17553+(1).*21.09441)./2; % average
+trainCost(2:end,2:end)=trainDistance(2:end,2:end).*0.087953; % low no intercept, bäst i test
+% trainCost(2:end,2:end)=trainDistance(2:end,2:end).*(0.087953+0.212784)./2; % average low and high no intercept
+
 
 % create destinatoion zone dymmy
 trainDestinationZoneIDs=TrainInVehicleTime(1,2:end);
@@ -286,6 +295,8 @@ for i=1:(size(trainDistance,1)-1)
     GDPPerCapitaMatrixTrain(i+1,noUsedIndex)=nan;
     TrainInVehicleTime(i+1,noUsedIndex)=nan;
     TrainFirstWaitTime(i+1,noUsedIndex)=nan;
+    TrainTransferWaitTimeInSweden(i+1,noUsedIndex)=nan;
+    TrainTransferWaitTimeOutSweden(i+1,noUsedIndex)=nan;
     TrainAccessEgressTime(i+1,noUsedIndex)=nan;
     trainNTransfer(i+1,noUsedIndex)=nan;
 end
@@ -433,7 +444,9 @@ level_of_service_var_train.SemesterZone=SemesterZonesMatrixTrain;
 level_of_service_var_train.GDPPerCapita=GDPPerCapitaMatrixTrain;
 level_of_service_var_train.accessEgressTimeTrain=TrainAccessEgressTime;
 % level_of_service_var_train.firstWaitTimeTrain=TrainFirstWaitTime;
-level_of_service_var_train.numberTransferTrain=trainNTransfer;
+% level_of_service_var_train.numberTransferTrain=trainNTransfer;
+% level_of_service_var_train.transferWaitTimeInSwedenTrain=TrainTransferWaitTimeInSweden;
+level_of_service_var_train.transferWaitTimeOutSwedenTrain=TrainTransferWaitTimeOutSweden;
 level_of_service_var_train.inVehicleTimeBusTrainAirFerry=TrainInVehicleTime;
 % level_of_service_var_train.logInVehicleTimeBusTrainAirFerry=TrainInVehicleTimeLog;
 level_of_service_var_train.travelCost_lowMediumIncome=trainCost;
@@ -547,7 +560,7 @@ final_result_bortavaror_4=NL_model_joint_estimation_log_zonal_flexible(RVU_borta
 RVU.logsumBortavaro_2=final_result_bortavaror_4.logsum;
 writetable(RVU,'//vti.se/root/Internationella-resor/R skript/RVU/R/LVDREstimation_reseGenerering.csv')
 
-%  %% descriptive for air invehicle time
+%% descriptive for air invehicle time
 % ZoneData.valdDestination=zeros(size(ZoneData,1),1);
 % startZoneID=RVU_bortavaror.(Origin_varname);
 % endZoneID=RVU_bortavaror.(Destination_varname);

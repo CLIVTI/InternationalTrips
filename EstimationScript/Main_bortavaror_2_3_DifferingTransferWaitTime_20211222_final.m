@@ -37,13 +37,16 @@ CarDistancePath='LOS/Car/CarDistanceKM.xlsx';
 BusTimeFilePath='LOS/Bus/TravelTime.xlsx';
 BusDistancePath='LOS/Bus/TravelDistanceKM.xlsx';
 % Train
-TrainImpedanceFilePath='LOS/Train/EMMEWeights/Impedans.xlsx';
-TrainInVehicleTimePath='LOS/Train/EMMEWeights/InVehicleTime.xlsx';
-TrainFirstWaitTimePath='LOS/Train/EMMEWeights/FirstWaitTime.xlsx';
-TrainAccessTimePath='LOS/Train/EMMEWeights/AccessTime.xlsx';
-TrainEgressTimePath='LOS/Train/EMMEWeights/EgressTime.xlsx';
-TrainDistancePath='LOS/Train/EMMEWeights/InVehDistance.xlsx';
-TrainNtransferPath='LOS/Train/EMMEWeights/NTransfer.xlsx';
+
+TrainInVehicleTimePath='LOS/Train/EMMEWeightsAndBusNetworkAsAccessEgress/InVehicleTime.xlsx';
+TrainFirstWaitTimePath='LOS/Train/EMMEWeightsAndBusNetworkAsAccessEgress/FirstWaitTime.xlsx';
+TrainAccessTimePath='LOS/Train/EMMEWeightsAndBusNetworkAsAccessEgress/AccessTime.xlsx';
+TrainEgressTimePath='LOS/Train/EMMEWeightsAndBusNetworkAsAccessEgress/EgressTime.xlsx';
+TrainDistancePath='LOS/Train/EMMEWeightsAndBusNetworkAsAccessEgress/InVehDistance.xlsx';
+TrainNtransferPath='LOS/Train/EMMEWeightsAndBusNetworkAsAccessEgress/NTransfer.xlsx';
+TrainTransferWaitTimeInSwedenPath='LOS/Train/EMMEWeightsAndBusNetworkAsAccessEgress/TransferWaitTimeWithinSweden.xlsx';
+TrainTransferWaitTimeOutSwedenPath='LOS/Train/EMMEWeightsAndBusNetworkAsAccessEgress/TransferWaitTimeOutsideSweden.xlsx';
+TrainAccessEgressDistancePath='LOS/Train/EMMEWeightsAndBusNetworkAsAccessEgress/AccessEgressDistance.xlsx';
 
 % Flight
 AirInVehicleTimePath='LOS/Air/EMMEWeights/InVehicleTime.xlsx';
@@ -75,7 +78,7 @@ RVU.D_B_TransCadID(RVU.D_B_TransCadID==-1)=RVU.D_B_TransCadID_World(RVU.D_B_Tran
 
 % recode some RVU variables
 %party size
-RVU.sallskap(isnan(RVU.sallskap))=1;
+RVU.sallskap(isnan(RVU.sallskap))=1.9159;  % this value is the mean of RVU.sallskap
 RVU.sallskap(RVU.sallskap>5)=5;  % if its >5 then probabilty the party cant be fitted in a car, just assuming 5 as maximum.
 RVU.PartySizeFactor=1./(1+RVU.sallskap);
 
@@ -83,8 +86,8 @@ RVU.PartySizeFactor=1./(1+RVU.sallskap);
 RVU.BILANT(isnan(RVU.BILANT))=0;
 
 % income
-RVU.lowMediumIncome=RVU.HHINK<500000;
-RVU.highIncome=RVU.HHINK>=500000;
+RVU.lowMediumIncome=RVU.HHINK<700000;
+RVU.highIncome=RVU.HHINK>=700000;
 RVU.incomeMissing=isnan(RVU.HHINK);
 % age
 RVU.age17=RVU.AGE<18;
@@ -112,8 +115,14 @@ RVU.VILLA=RVU.VILLA==1;
 % RVU.D_B_TransCadID(RVU.D_B_TransCadID==141)=151;
 RVU.D_B_TransCadID(RVU.D_B_TransCadID==198)=209;
 
-
+count=0;
 RVU_bortavaror=RVU(RVU.bortavaro==2 | RVU.bortavaro==3,:);
+for i=1:size(RVU_bortavaror,1)
+    check=find(RVU_bortavaror.UENR==RVU_bortavaror.UENR(i));
+    if length(check)>2
+        count=count+1;
+    end
+end
 %% read land use data
 opts = detectImportOptions(landUseFilePath);
 ZoneData=readtable(landUseFilePath,opts);
@@ -253,17 +262,29 @@ end
 
 
 TrainInVehicleTime= xlsread(TrainInVehicleTimePath) ;
+TrainInVehicleTime_decrease=TrainInVehicleTime;
+TrainInVehicleTime_decrease(2:end,2:end)=TrainInVehicleTime(2:end,2:end)*0.9;
 TrainFirstWaitTime=xlsread(TrainFirstWaitTimePath) ;
+TrainTransferWaitTimeInSweden=xlsread(TrainTransferWaitTimeInSwedenPath);
+TrainTransferWaitTimeOutSweden=xlsread(TrainTransferWaitTimeOutSwedenPath);
+TrainTransferWaitTimeOutSweden_decrease=TrainTransferWaitTimeOutSweden;
+TrainTransferWaitTimeOutSweden_decrease(2:end,2:end)=TrainTransferWaitTimeOutSweden(2:end,2:end)*0.9;
 TrainAccessTime=xlsread(TrainAccessTimePath) ;
 TrainEgressTime=xlsread(TrainEgressTimePath) ;
 TrainAccessEgressTime=TrainAccessTime;
 TrainAccessEgressTime(2:end,2:end)=TrainAccessTime(2:end,2:end)+TrainEgressTime(2:end,2:end);
-TrainTotalTime=TrainInVehicleTime;
-TrainTotalTime(2:end,2:end)=TrainInVehicleTime(2:end,2:end)+TrainFirstWaitTime(2:end,2:end)+TrainAccessEgressTime(2:end,2:end);
 trainDistance = xlsread(TrainDistancePath) ;
+trainAccessEgressDistance = xlsread(TrainAccessEgressDistancePath) ;
+
 trainCost=trainDistance;
 trainNTransfer=xlsread(TrainNtransferPath) ;
-trainCost(2:end,2:end)=trainDistance(2:end,2:end).*0.17553+(trainNTransfer(2:end,2:end)+1).*21.09441;
+% trainCost(2:end,2:end)=trainDistance(2:end,2:end).*0.17553+(1).*21.09441; % high
+% trainCost(2:end,2:end)=trainDistance(2:end,2:end).*0.06492+(1).*13.04077; % low
+trainCost(2:end,2:end)=(trainDistance(2:end,2:end).*0.06492+(1).*13.04077+trainDistance(2:end,2:end).*0.17553+(1).*21.09441)./2+ trainAccessEgressDistance(2:end,2:end)*0.18; % average
+% trainCost(2:end,2:end)=trainDistance(2:end,2:end).*0.087953; % low no intercept, bäst i test
+% trainCost(2:end,2:end)=trainDistance(2:end,2:end).*(0.087953+0.212784)./2; % average low and high no intercept
+trainCost_increase=trainCost;
+trainCost_increase(2:end,2:end)=trainCost(2:end,2:end).*1.1;
 
 % create destinatoion zone dymmy
 trainDestinationZoneIDs=TrainInVehicleTime(1,2:end);
@@ -282,19 +303,25 @@ GDPPerCapitaMatrixTrain(2:end,2:end)=GDPPerCapita(ones(size(TrainInVehicleTime,1
 for i=1:(size(trainDistance,1)-1)
     noUsedIndex=trainCost(i+1,:)==0 | trainDistance(i+1,:)<100;
     noUsedIndex(1)=0;
+    trainCost_increase(i+1,noUsedIndex)=nan;
     SemesterZonesMatrixTrain(i+1,noUsedIndex)=nan;
     GDPPerCapitaMatrixTrain(i+1,noUsedIndex)=nan;
     TrainInVehicleTime(i+1,noUsedIndex)=nan;
+    TrainInVehicleTime_decrease(i+1,noUsedIndex)=nan;
     TrainFirstWaitTime(i+1,noUsedIndex)=nan;
+    TrainTransferWaitTimeInSweden(i+1,noUsedIndex)=nan;
+    TrainTransferWaitTimeOutSweden(i+1,noUsedIndex)=nan;
     TrainAccessEgressTime(i+1,noUsedIndex)=nan;
     trainNTransfer(i+1,noUsedIndex)=nan;
+    TrainTransferWaitTimeOutSweden_decrease(i+1,noUsedIndex)=nan;
 end
 
 TrainInVehicleTimeLog=TrainInVehicleTime;
 TrainInVehicleTimeLog(2:end,2:end)=log(TrainInVehicleTime(2:end,2:end)+0.01);
 trainCostLog=trainCost;
 trainCostLog(2:end,2:end)=log(trainCost(2:end,2:end)+0.01);
-
+trainCostLog_increase=trainCost_increase;
+trainCostLog_increase(2:end,2:end)=log(trainCost_increase(2:end,2:end)+0.01);
 % flight time and cost
 
 % AirInVehicleTimePath='LOS/Air/InVehicleTime.xlsx';
@@ -407,11 +434,14 @@ level_of_service_var_car.SemesterZone=SemesterZonesMatrixCar;
 level_of_service_var_car.GDPPerCapita=GDPPerCapitaMatrixCar;
 level_of_service_var_car.carTravelTime=carTime;
 % level_of_service_var_car.carLogTravelTime=carTimeLog;
-level_of_service_var_car.travelCost_lowMediumIncome=carCost;
-level_of_service_var_car.travelCost_highIncome=carCost;
-level_of_service_var_car.travelCost_incomeMissing=carCost;
-% level_of_service_var_car.travelCostLog_lowMediumIncome=carCostLog;
-level_of_service_var_car.travelCostLog_highIncome=carCostLog;
+% level_of_service_var_car.travelCost_lowMediumIncome=carCost;
+% level_of_service_var_car.travelCost_highIncome=carCost;
+% level_of_service_var_car.travelCost_incomeMissing=carCost;
+level_of_service_var_car.travelCost=carCost;
+level_of_service_var_car.travelCostLog_lowMediumIncome=carCostLog;
+% level_of_service_var_car.travelCostLog_highIncome=carCostLog;
+% level_of_service_var_car.travelCost=carCost;
+% level_of_service_var_car.travelCostLog=carCostLog;
 level_of_service_var_car.travelCost_age17=carCost;
 
 % bus
@@ -420,28 +450,38 @@ level_of_service_var_bus.SemesterZone=SemesterZonesMatrixBus;
 level_of_service_var_bus.GDPPerCapita=GDPPerCapitaMatrixBus;
 level_of_service_var_bus.inVehicleTimeBusTrainAirFerry=busTime;
 % level_of_service_var_bus.logInVehicleTimeBusTrainAirFerry=busTimeLog;
-level_of_service_var_bus.travelCost_lowMediumIncome=busCost;
-level_of_service_var_bus.travelCost_highIncome=busCost;
-level_of_service_var_bus.travelCost_incomeMissing=busCost;
-% level_of_service_var_bus.travelCostLog_lowMediumIncome=busCostLog;
-level_of_service_var_bus.travelCostLog_highIncome=busCostLog;
+
+% level_of_service_var_bus.travelCost_lowMediumIncome=busCost;
+% level_of_service_var_bus.travelCost_highIncome=busCost;
+% level_of_service_var_bus.travelCost_incomeMissing=busCost;
+level_of_service_var_bus.travelCost=busCost;
+level_of_service_var_bus.travelCostLog_lowMediumIncome=busCostLog;
+% level_of_service_var_bus.travelCostLog_highIncome=busCostLog;
+% level_of_service_var_bus.travelCost=busCost;
+% level_of_service_var_bus.travelCostLog=busCostLog;
 level_of_service_var_bus.travelCost_age17=busCost;
 
 % train
 level_of_service_var_train=[];
 level_of_service_var_train.SemesterZone=SemesterZonesMatrixTrain;
 level_of_service_var_train.GDPPerCapita=GDPPerCapitaMatrixTrain;
-level_of_service_var_train.accessEgressTimeTrain=TrainAccessEgressTime;
+level_of_service_var_train.accessEgressTimeTrainAirFerry=TrainAccessEgressTime;
 % level_of_service_var_train.firstWaitTimeTrain=TrainFirstWaitTime;
-level_of_service_var_train.numberTransferTrain=trainNTransfer;
+% level_of_service_var_train.numberTransferTrain=trainNTransfer;
+% level_of_service_var_train.transferWaitTimeInSwedenTrain=TrainTransferWaitTimeInSweden;
+level_of_service_var_train.transferWaitTimeOutSwedenTrain=TrainTransferWaitTimeOutSweden;
 level_of_service_var_train.inVehicleTimeBusTrainAirFerry=TrainInVehicleTime;
 % level_of_service_var_train.logInVehicleTimeBusTrainAirFerry=TrainInVehicleTimeLog;
-level_of_service_var_train.travelCost_lowMediumIncome=trainCost;
-level_of_service_var_train.travelCost_highIncome=trainCost;
-level_of_service_var_train.travelCost_incomeMissing=trainCost;
-% level_of_service_var_train.travelCostLog_lowMediumIncome=trainCostLog;
-level_of_service_var_train.travelCostLog_highIncome=trainCostLog;
-level_of_service_var_train.travelCost_age17=trainCostLog;
+
+% level_of_service_var_train.travelCost_lowMediumIncome=trainCost;
+% level_of_service_var_train.travelCost_highIncome=trainCost;
+% level_of_service_var_train.travelCost_incomeMissing=trainCost;
+level_of_service_var_train.travelCost=trainCost;
+level_of_service_var_train.travelCostLog_lowMediumIncome=trainCostLog;
+% level_of_service_var_train.travelCostLog_highIncome=trainCostLog;
+% level_of_service_var_train.travelCost=trainCost;
+% level_of_service_var_train.travelCostLog=trainCostLog;
+level_of_service_var_train.travelCost_age17=trainCost;
 
 % flight
 level_of_service_var_air=[];
@@ -468,17 +508,20 @@ level_of_service_var_air=[];
 % airTime_threshold2(:,1)=AirInVehicleTime(:,1);
 level_of_service_var_air.SemesterZoneAir=SemesterZonesMatrixAir;
 level_of_service_var_air.GDPPerCapitaAir=GDPPerCapitaMatrixAir;
-level_of_service_var_air.accessEgressTimeAirFerry=AirAccessEgressTime;
+level_of_service_var_air.accessEgressTimeTrainAirFerry=AirAccessEgressTime;
 % level_of_service_var_air.numberTransferAir=airNTransfer;
 level_of_service_var_air.inVehicleTimeBusTrainAirFerry=AirInVehicleTime;
 % level_of_service_var_air.logInVehicleTimeBusTrainAirFerry=AirInVehicleTimeLog;
 
 
-level_of_service_var_air.travelCost_lowMediumIncome=airCost;
-level_of_service_var_air.travelCost_highIncome=airCost;
-level_of_service_var_air.travelCost_incomeMissing=airCost;
-% level_of_service_var_air.travelCostLog_lowMediumIncome=airCostLog;
-level_of_service_var_air.travelCostLog_highIncome=airCostLog;
+% level_of_service_var_air.travelCost_lowMediumIncome=airCost;
+% level_of_service_var_air.travelCost_highIncome=airCost;
+% level_of_service_var_air.travelCost_incomeMissing=airCost;
+level_of_service_var_air.travelCost=airCost;
+level_of_service_var_air.travelCostLog_lowMediumIncome=airCostLog;
+% level_of_service_var_air.travelCostLog_highIncome=airCostLog;
+% level_of_service_var_air.travelCost=airCost;
+% level_of_service_var_air.travelCostLog=airCostLog;
 level_of_service_var_air.travelCost_age17=airCost;
 
 % ferry
@@ -486,17 +529,20 @@ level_of_service_var_ferry=[];
 level_of_service_var_ferry.SemesterZone=SemesterZonesMatrixFerry;
 level_of_service_var_ferry.GDPPerCapita=GDPPerCapitaMatrixFerry;
 level_of_service_var_ferry.BalticSeaCoastDummy=FerryDestinationFerry;
-level_of_service_var_ferry.accessEgressTimeAirFerry=FerryAccessEgressTime;
+level_of_service_var_ferry.accessEgressTimeTrainAirFerry=FerryAccessEgressTime;
 % level_of_service_var_ferry.firstWaitTimeTrainFerry=FerryFirstWaitTime;
 % level_of_service_var_ferry.numberTransferFerry=ferryNTransfer;
 level_of_service_var_ferry.inVehicleTimeBusTrainAirFerry=FerryInVehicleTime;
 % level_of_service_var_ferry.TotalTimeFerry=FerryTotalTime;
 % level_of_service_var_ferry.logInVehicleTimeBusTrainAirFerry=FerryInVehicleTimeLog;
-level_of_service_var_ferry.travelCost_lowMediumIncome=ferryCost;
-level_of_service_var_ferry.travelCost_highIncome=ferryCost;
-level_of_service_var_ferry.travelCost_incomeMissing=ferryCost;
-% level_of_service_var_ferry.travelCostLog_lowMediumIncome=ferryCostLog;
-level_of_service_var_ferry.travelCostLog_highIncome=ferryCostLog;
+% level_of_service_var_ferry.travelCost_lowMediumIncome=ferryCost;
+% level_of_service_var_ferry.travelCost_highIncome=ferryCost;
+% level_of_service_var_ferry.travelCost_incomeMissing=ferryCost;
+level_of_service_var_ferry.travelCost=ferryCost;
+level_of_service_var_ferry.travelCostLog_lowMediumIncome=ferryCostLog;
+% level_of_service_var_ferry.travelCostLog_highIncome=ferryCostLog;
+% level_of_service_var_ferry.travelCost=ferryCost;
+% level_of_service_var_ferry.travelCostLog=ferryCostLog;
 level_of_service_var_ferry.travelCost_age17=ferryCost;
 
 
@@ -545,9 +591,121 @@ final_result_bortavaror_4=NL_model_joint_estimation_log_zonal_flexible(RVU_borta
                                                           Destination_varname);
                                                       
 RVU.logsumBortavaro_2=final_result_bortavaror_4.logsum;
+
+predictionBaseline=Apply_NL_model(final_result_bortavaror_4,...
+    RVU_bortavaror,...
+    RVU,...
+    model_specification_modeChoice,...
+    ZoneData,...
+    ZoneID_varname,...
+    zonal_varNames,...
+    level_of_service_var,...
+    TripID_varname,...
+    Origin_varname,...
+    Destination_varname);
+RVU.bortavaror23_baseline_Probability_car=predictionBaseline.probability_fullData(:,1);
+RVU.bortavaror23_baseline_Probability_bus=predictionBaseline.probability_fullData(:,2);
+RVU.bortavaror23_baseline_Probability_train=predictionBaseline.probability_fullData(:,3);
+RVU.bortavaror23_baseline_Probability_air=predictionBaseline.probability_fullData(:,4);
+RVU.bortavaror23_baseline_Probability_ferry=predictionBaseline.probability_fullData(:,5);
+% cost +10%
+level_of_service_var_scenario=level_of_service_var;
+level_of_service_var_scenario.train.travelCost=trainCost_increase;
+level_of_service_var_scenario.train.travelCostLog_lowMediumIncome=trainCostLog_increase;
+level_of_service_var_scenario.train.travelCost_age17=trainCost_increase;
+prediction_scenario=Apply_NL_model(final_result_bortavaror_4,...
+    RVU_bortavaror,...
+    RVU,...
+    model_specification_modeChoice,...
+    ZoneData,...
+    ZoneID_varname,...
+    zonal_varNames,...
+    level_of_service_var_scenario,...
+    TripID_varname,...
+    Origin_varname,...
+    Destination_varname);
+RVU.bortavaror23_trainCostIncreaseScenario_Probability_car=prediction_scenario.probability_fullData(:,1);
+RVU.bortavaror23_trainCostIncreaseScenario_Probability_bus=prediction_scenario.probability_fullData(:,2);
+RVU.bortavaror23_trainCostIncreaseScenario_Probability_train=prediction_scenario.probability_fullData(:,3);
+RVU.bortavaror23_trainCostIncreaseScenario_Probability_air=prediction_scenario.probability_fullData(:,4);
+RVU.bortavaror23_trainCostIncreaseScenario_Probability_ferry=prediction_scenario.probability_fullData(:,5);
+RVU.bortavaror23_trainCostIncreaseScenario_logsum=prediction_scenario.logsum_fullData;
+
+% train inVehicle time -10%
+level_of_service_var_scenario=level_of_service_var;
+level_of_service_var_scenario.train.inVehicleTimeBusTrainAirFerry=TrainInVehicleTime_decrease;
+prediction_scenario=Apply_NL_model(final_result_bortavaror_4,...
+    RVU_bortavaror,...
+    RVU,...
+    model_specification_modeChoice,...
+    ZoneData,...
+    ZoneID_varname,...
+    zonal_varNames,...
+    level_of_service_var_scenario,...
+    TripID_varname,...
+    Origin_varname,...
+    Destination_varname);
+RVU.bortavaror23_trainInVehTimeDecreaseScenario_Probability_car=prediction_scenario.probability_fullData(:,1);
+RVU.bortavaror23_trainInVehTimeDecreaseScenario_Probability_bus=prediction_scenario.probability_fullData(:,2);
+RVU.bortavaror23_trainInVehTimeDecreaseScenario_Probability_train=prediction_scenario.probability_fullData(:,3);
+RVU.bortavaror23_trainInVehTimeDecreaseScenario_Probability_air=prediction_scenario.probability_fullData(:,4);
+RVU.bortavaror23_trainInVehTimeDecreaseScenario_Probability_ferry=prediction_scenario.probability_fullData(:,5);
+RVU.bortavaror23_trainInVehTimeDecreaseScenario_logsum=prediction_scenario.logsum_fullData;
+
+% train waitingTime -10%
+level_of_service_var_scenario=level_of_service_var;
+level_of_service_var_scenario.train.transferWaitTimeOutSwedenTrain=TrainTransferWaitTimeOutSweden_decrease;
+prediction_scenario=Apply_NL_model(final_result_bortavaror_4,...
+    RVU_bortavaror,...
+    RVU,...
+    model_specification_modeChoice,...
+    ZoneData,...
+    ZoneID_varname,...
+    zonal_varNames,...
+    level_of_service_var_scenario,...
+    TripID_varname,...
+    Origin_varname,...
+    Destination_varname);
+RVU.bortavaror23_trainWaitingTimeDecreaseScenario_Probability_car=prediction_scenario.probability_fullData(:,1);
+RVU.bortavaror23_trainWaitingTimeDecreaseScenario_Probability_bus=prediction_scenario.probability_fullData(:,2);
+RVU.bortavaror23_trainWaitingTimeDecreaseScenario_Probability_train=prediction_scenario.probability_fullData(:,3);
+RVU.bortavaror23_trainWaitingTimeDecreaseScenario_Probability_air=prediction_scenario.probability_fullData(:,4);
+RVU.bortavaror23_trainWaitingTimeDecreaseScenario_Probability_ferry=prediction_scenario.probability_fullData(:,5);
+RVU.bortavaror23_trainWaitingTimeDecreaseScenario_logsum=prediction_scenario.logsum_fullData;
+
+% train combined scenario
+level_of_service_var_scenario=level_of_service_var;
+level_of_service_var_scenario.train.travelCost=trainCost_increase;
+level_of_service_var_scenario.train.travelCostLog_lowMediumIncome=trainCostLog_increase;
+level_of_service_var_scenario.train.travelCost_age17=trainCost_increase;
+level_of_service_var_scenario.train.inVehicleTimeBusTrainAirFerry=TrainInVehicleTime_decrease;
+level_of_service_var_scenario.train.transferWaitTimeOutSwedenTrain=TrainTransferWaitTimeOutSweden_decrease;
+prediction_scenario=Apply_NL_model(final_result_bortavaror_4,...
+    RVU_bortavaror,...
+    RVU,...
+    model_specification_modeChoice,...
+    ZoneData,...
+    ZoneID_varname,...
+    zonal_varNames,...
+    level_of_service_var_scenario,...
+    TripID_varname,...
+    Origin_varname,...
+    Destination_varname);
+RVU.bortavaror23_trainCombinedScenario_Probability_car=prediction_scenario.probability_fullData(:,1);
+RVU.bortavaror23_trainCombinedScenario_Probability_bus=prediction_scenario.probability_fullData(:,2);
+RVU.bortavaror23_trainCombinedScenario_Probability_train=prediction_scenario.probability_fullData(:,3);
+RVU.bortavaror23_trainCombinedScenario_Probability_air=prediction_scenario.probability_fullData(:,4);
+RVU.bortavaror23_trainCombinedScenario_Probability_ferry=prediction_scenario.probability_fullData(:,5);
+RVU.bortavaror23_trainCombinedScenario_logsum=prediction_scenario.logsum_fullData;
+
+%% write results
 writetable(RVU,'//vti.se/root/Internationella-resor/R skript/RVU/R/LVDREstimation_reseGenerering.csv')
 
-%  %% descriptive for air invehicle time
+% nanmean((RVU.bortavaror23_trainCombinedScenario_Probability_train-RVU.bortavaror23_baseline_Probability_train)./RVU.bortavaror23_baseline_Probability_train)
+% nanmean((RVU.bortavaror23_trainInVehTimeDecreaseScenario_Probability_train-RVU.bortavaror23_baseline_Probability_train)./RVU.bortavaror23_baseline_Probability_train)
+% nanmean((RVU.bortavaror23_trainCostIncreaseScenario_Probability_train-RVU.bortavaror23_baseline_Probability_train)./RVU.bortavaror23_baseline_Probability_train)
+% nanmean((RVU.bortavaror23_trainWaitingTimeDecreaseScenario_Probability_train-RVU.bortavaror23_baseline_Probability_train)./RVU.bortavaror23_baseline_Probability_train)
+%% descriptive for air invehicle time
 % ZoneData.valdDestination=zeros(size(ZoneData,1),1);
 % startZoneID=RVU_bortavaror.(Origin_varname);
 % endZoneID=RVU_bortavaror.(Destination_varname);
